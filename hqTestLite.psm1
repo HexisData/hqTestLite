@@ -1,8 +1,8 @@
 ﻿$Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CadisProcessAgent.exe"
 $Global:DefaultMedmDbServer = "MyMedmDbServer"
 $Global:DefaultMedmDbName = "MyMedmDb"
-$Global:DefaultSqlScriptType = "Sql Script"
 $Global:DefaultBeyondComparePath = "C:\Program Files\Beyond Compare 4\BCompare.exe"
+$Global:DefaultSqlScriptType = "Sql Script"
 
 function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]

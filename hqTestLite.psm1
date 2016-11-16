@@ -1,10 +1,8 @@
-﻿$Global:DefaultMedmProcessAgentDir = "C:\Program Files\Markit Group\Markit EDM_10_5_3_1"
-$Global:DefaultMedmProcessAgentExe = "CADISProcessAgent.exe"
-$Global:DefaultMedmDbServer = "nt7565"
-$Global:DefaultMedmDbName = "MARKITEDM_DEV_DX"
+﻿$Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CadisProcessAgent.exe"
+$Global:DefaultMedmDbServer = "MyMedmDbServer"
+$Global:DefaultMedmDbName = "MyMedmDb"
 $Global:DefaultSqlScriptType = "Sql Script"
-$Global:DefaultBeyondCompareDir = "C:\Program Files\Beyond Compare 4"
-$Global:DefaultBeyondCompareExe = "BCompare.exe"
+$Global:DefaultBeyondComparePath = "C:\Program Files\Beyond Compare 4\BCompare.exe"
 
 function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
@@ -21,9 +19,9 @@ function Invoke-SqlScripts {
         [Parameter(Mandatory = $True)]
         [string]$SqlFiles,
 
-        [string]$ScriptType = $Global:DefaultSqlScriptType,
+        [string]$OutputPath = $null,
 
-        [string]$OutputFile = $null
+        [string]$ScriptType = $Global:DefaultSqlScriptType
     )
 
     # Default $SqlDir to current location.
@@ -33,13 +31,13 @@ function Invoke-SqlScripts {
     if ($SqlFiles) {
         "Beginning " + $ScriptType + " execution against database " + $DbServer + "\" + $DbName | Write-Verbose
         Push-Location
-        if ($OutputFile) { "" | Out-File -FilePath $OutputFile }
+        if ($OutputPath) { "" | Out-File -FilePath $OutputPath }
         $SqlFiles.Split(",") | ForEach {
             $SqlPath = Join-Path -Path $SqlDir -ChildPath $_
             if ($PSCmdlet.ShouldProcess($ScriptType + " " + $_)) {
-                if ($OutputFile) { 
-                    "========== " + $_ + " ==========" | Out-File -FilePath $OutputFile -Append 
-                    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Out-File -FilePath $OutputFile -Append
+                if ($OutputPath) { 
+                    "========== " + $_ + " ==========" | Out-File -FilePath $OutputPath -Append 
+                    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Out-File -FilePath $OutputPath -Append
                 }
                 else { 
                     Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 
@@ -56,22 +54,20 @@ function Invoke-MedmSolution {
     [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
 
     Param(
-        [string]$ProcessAgentDir = $Global:DefaultMedmProcessAgentDir,
-
-        [string]$ProcessAgentExe = $Global:DefaultMedmProcessAgentExe,
+        [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
 
         [string]$DbServer = $Global:DefaultMedmDbServer,
 
         [string]$DbName = $Global:DefaultMedmDbName,
 
+        [string]$SetupSqlDir = $null,
+
+        [string]$SetupSqlFiles = $null,
+
         [Parameter(Mandatory = $True)]
         [string]$SolutionName,
 
         [string]$SolutionParams = $null,
-
-        [string]$SetupSqlDir = $null,
-
-        [string]$SetupSqlFiles = $null,
 
         [string]$CleanupSqlDir = $null,
 
@@ -87,7 +83,6 @@ function Invoke-MedmSolution {
         -ScriptType "Setup Script"
 
     # Compose MEDM solution invocation.
-    $ProcessAgentPath = Join-Path -Path $ProcessAgentDir -ChildPath $ProcessAgentExe
     $params = "/server:" + $DbServer
     $params = $params + " /db:" + $DbName
     $params = $params + " /integrated:yes"
@@ -120,24 +115,21 @@ function Test-MedmSolution {
     [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
 
     Param(
-        [string]$ProcessAgentDir = $Global:DefaultMedmProcessAgentDir,
-
-        [string]$ProcessAgentExe = $Global:DefaultMedmProcessAgentExe,
+        [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
 
         [string]$DbServer = $Global:DefaultMedmDbServer,
 
         [string]$DbName = $Global:DefaultMedmDbName,
-
-        [Parameter(Mandatory = $True)]
-        [string]$SolutionName,
-
-        [string]$SolutionParams = $null,
 
         [string]$SetupSqlDir = $null,
 
         [string]$SetupSqlFiles = $null,
 
         [Parameter(Mandatory = $True)]
+        [string]$SolutionName,
+
+        [string]$SolutionParams = $null,
+
         [string]$ResultSqlDir,
 
         [Parameter(Mandatory = $True)]
@@ -147,20 +139,17 @@ function Test-MedmSolution {
 
         [string]$CleanupSqlFiles = $null,
 
-        [string]$CertifiedResultFile = $null,
-
         [Parameter(Mandatory = $True)]
-        [string]$ActualResultFile,
+        [string]$TestResultPath,
 
-        [string]$BeyondCompareDir = $Global:DefaultBeyondCompareDir,
+        [string]$CertifiedResultPath = $null,
 
-        [string]$BeyondCompareExe = $Global:DefaultBeyondCompareExe
+        [string]$BeyondComparePath = $Global:DefaultBeyondComparePath
     )
 
     # Invoke setup scripts and MEDM solution.
     Invoke-MedmSolution `
-        -ProcessAgentDir $ProcessAgentDir `
-        -ProcessAgentExe $ProcessAgentExe `
+        -ProcessAgentPath $ProcessAgentPath `
         -DbServer $DbServer `
         -DbName $DbName `
         -SolutionName $SolutionName `
@@ -171,23 +160,14 @@ function Test-MedmSolution {
     # Invoke result scripts.
     "Beginning Result Query execution against database " + $DbServer + "\" + $DbName | Write-Verbose
     if ($PSCmdlet.ShouldProcess("Result Query")) {
-        "" | Out-File -FilePath $ActualResultFile
+        "" | Out-File -FilePath $TestResultPath
         $ResultSqlFiles.Split(",") | ForEach {
-            "========== " + $_ + " ==========" | Out-File -FilePath $ActualResultFile -Append
+            "========== " + $_ + " ==========" | Out-File -FilePath $TestResultPath -Append
             $ResultSqlFile = Join-Path -Path $ResultSqlDir -ChildPath $_
-            Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $ResultSqlFile | Out-File -FilePath $ActualResultFile -Append
+            Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $ResultSqlFile | Out-File -FilePath $TestResultPath -Append
         }
     }
     "Completed Result Query execution against database " + $DbServer + "\" + $DbName | Write-Verbose
-
-    if ($CertifiedResultFile) {
-        $BeyondComparePath = Join-Path -Path $BeyondCompareDir -ChildPath $BeyondCompareExe
-        $params = "`"" + $CertifiedResultFile + "`" `"" + $ActualResultFile + "`" /readonly"
-
-        "Displaying difference between certified & actual results." | Write-Verbose  
-        if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
-        else {"`"" + $BeyondComparePath + "`" " + $params | Out-Host}
-    }
 
     # Invoke cleanup scripts.
     if ($CleanupSqlFiles) {
@@ -197,6 +177,14 @@ function Test-MedmSolution {
             -SqlDir $CleanupSqlDir `
             -SqlFiles $CleanupSqlFiles `
             -ScriptType "Cleanup Script"
+    }
+
+    if ($CertifiedResultPath) {
+        $params = "`"" + $TestResultPath + "`" `"" + $CertifiedResultPath + "`" /readonly"
+
+        "Displaying difference between actual & certified results." | Write-Verbose  
+        if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
+        else {"`"" + $BeyondComparePath + "`" " + $params | Out-Host}
     }
 }
 

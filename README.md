@@ -34,7 +34,21 @@ Test-MedmSolution `
 
 ## Global Defaults
 
-The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, many of these values should be overridden on a per-environment basis as illustrated
+The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, many of these values should be overridden on a per-environment basis as illustrated in [SampleTest.ps1](SampleTest.ps1). 
+
+The following global variables may be overridden:
+
+**$Global:DefaultMedmProcessAgentPath** &ndash; The local path to the MEDM Process Agent executable. This path will vary based on the MEDM version in use. Should be consistent across the team.
+
+**$Global:DefaultMedmDbServer** &ndash The current environment's SQL Server address.
+
+**$Global:DefaultMedmDbName** &ndash The current environment's SQL Server database name.
+
+**$Global:DefaultBeyondComparePath** &ndash The local path to the BeyondCompare executable. Should be consistent across the team.
+
+**$Global:DefaultSqlScriptType** &ndash The default script type token to use when *-Verbose* or *-WhatIf* are activated. Useful for troubleshooting.
+
+See [EnvironmentOverrides.ps1](EnvironmentOverrides.ps1) for a typical example of an environment override script.
 
 ## Cmdlets
 

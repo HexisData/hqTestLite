@@ -18,7 +18,7 @@ A typical test script will look something like this (see [SampleTest.ps1](Sample
 Import-Module "\\netshare\hqTestLite.psm1" -Force
 
 # Override global defaults with values specific to the test environment.
-Invoke-Expression ".\EnvironmentOverrides.ps1"
+Invoke-Expression "\\netshare\Test\EnvironmentOverrides.ps1"
 
 # Using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath.
 # Leaving out directory params assuming SQL scripts are co-located with the test script. 
@@ -34,7 +34,7 @@ Test-MedmSolution `
 
 ## Global Defaults
 
-The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, consider modifying a version of 
+The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, many of these values should be overridden on a per-environment basis as illustrated
 
 ## Cmdlets
 

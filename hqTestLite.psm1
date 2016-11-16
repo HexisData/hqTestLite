@@ -37,7 +37,7 @@ function Invoke-SqlScripts {
             if ($PSCmdlet.ShouldProcess($ScriptType + " " + $_)) {
                 if ($OutputPath) { 
                     "========== " + $_ + " ==========" | Out-File -FilePath $OutputPath -Append 
-                    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Out-File -FilePath $OutputPath -Append
+                    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List | Out-File -FilePath $OutputPath -Append
                 }
                 else { 
                     Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 

@@ -74,7 +74,7 @@ Invoke-SqlScripts `
 
 **-OutputPath** &ndash; Optional. If set, indicates the text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. Ex: `-OutputPath "C:\MyOutputDir\MyOutputFile.txt"`
 
-**-ScriptType** &ndash; Optional. Used to differentiate different script types with the *-Verbose* and *-WhatIf* flags. Default to the value of *$Global:DefaultSqlScriptType*. Ex: `-ScriptType "Sql Script"` 
+**-ScriptType** &ndash; Optional. Used to differentiate different script types with the *-Verbose* and *-WhatIf* flags. Defaults to the value of *$Global:DefaultSqlScriptType*. Ex: `-ScriptType "Sql Script"` 
 
 ### Invoke-MedmSolution
 

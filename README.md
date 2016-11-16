@@ -40,13 +40,13 @@ The following global variables may be overridden:
 
 **$Global:DefaultMedmProcessAgentPath** &ndash; The local path to the MEDM Process Agent executable. This path will vary based on the MEDM version in use. Should be consistent across the team.
 
-**$Global:DefaultMedmDbServer** &ndash The current environment's SQL Server address.
+**$Global:DefaultMedmDbServer** &ndash; The current environment's SQL Server address.
 
-**$Global:DefaultMedmDbName** &ndash The current environment's SQL Server database name.
+**$Global:DefaultMedmDbName** &ndash; The current environment's SQL Server database name.
 
-**$Global:DefaultBeyondComparePath** &ndash The local path to the BeyondCompare executable. Should be consistent across the team.
+**$Global:DefaultBeyondComparePath** &ndash; The local path to the BeyondCompare executable. Should be consistent across the team.
 
-**$Global:DefaultSqlScriptType** &ndash The default script type token to use when *-Verbose* or *-WhatIf* are activated. Useful for troubleshooting.
+**$Global:DefaultSqlScriptType** &ndash; The default script type token to use when *-Verbose* or *-WhatIf* are activated. Useful for troubleshooting.
 
 See [EnvironmentOverrides.ps1](EnvironmentOverrides.ps1) for a typical example of an environment override script.
 

@@ -1,5 +1,40 @@
 # hqTestLite
-A PowerShell version of hqTest.
+A PowerShell version of hqTest. Currently only supports testing of Markit EDM Solutions.
+
+## Usage
+
+In this version of hqTest, a test is expressed as a short PowerShell script that invokes the *Test-MedmSolution* cmdlet. This cmdlet performs the following tasks:
+
+1. Optionally executes one or more SQL setup scripts against the target DB. Normally this step will be used to stage test data in cases where the process under test is consuming data in DB tables instead of a file.
+1. Executes the target MEDM Solution with specified parameters.
+1. Executes one or more result scripts against the target DB. Each script should produce a single rowset, so if more than one table must be evaluated there should be a result script for each. Result scripts are completely free form; any logic is valid so long as it produces a single rowset. Result scripts should be articulated in such as fashion as to produce a consistent result run over run, so they should leave out RunIds, update dates, and other data elements that change from one run to the next (unless the script logic normalizes them so they don't). All result script output is combined into a test result file.
+1. Optionally executes one or more cleanup scripts, normally intended to restore the database to its pre-test state.
+1. Optionally launches BeyondCompare to display the difference between the current test result file and some designated, previously certified test result file.
+
+A typical test script will look something like this:
+
+```powershell
+# Locate the hqTestLite module in a central repository to make it easy to upgrade.
+Import-Module "\\netshare\hqTestLite.psm1" -Force
+
+# Override global defaults with values specific to the test environment.
+Invoke-Expression ".\EnvironmentOverrides.ps1"
+
+# Using global defaults for ProcessAGentPath, DbServer, and DbName.
+# Leaving out directory params assuming SQL scripts are co-located with the test script. 
+Test-MedmSolution `
+    -SetupSqlFiles "MySolution_Setup.sql" `
+    -SolutionName "MySolution" `
+    -SolutionParams "Param1=Value:Param2=Value2:Param3=Value3" `
+    -ResultSqlFiles "MySolution_Result1.sql,MySolution_Result2.sql" `
+    -CleanupSqlFiles "MySolution_Cleanup.sql" `
+    -TestResultPath "MySolution_TestResult.txt" `
+    -CertifiedResultPath "MySolution_CertifiedResult.txt" `
+```
+
+## Global Defaults
+
+The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, consider modifying a version of 
 
 ## Cmdlets
 

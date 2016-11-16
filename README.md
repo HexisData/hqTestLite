@@ -33,11 +33,11 @@ Invoke-SqlScripts `
 
 **-DbName** &ndash; Required. The target SQL Server database name. Ex: `-DbName "MARKITEDM_DEV_DX"`
 
-**-SqlDir** &ndash; Optional. The directory containing the SQL scripts to be executed. If omitted, defaults to the current directory. Ex: `-SqlDir "C:\MySqlDir"`
+**-SqlDir** &ndash; Optional. The directory containing the SQL scripts to be executed. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SqlDir "C:\MySqlDir"`
 
 **-SqlFiles** &ndash; Required. A comma-delimited list of SQL script files to be executed. All must be located within the directory indicated with *-SqlDir*. Ex: `-SqlFiles "MySqlFile1.sql,MySqlFile2.sql"`
 
-**-OutputPath** &ndash; Optional. If set, indicates the text file to which all script outputs will be written. File will be overwritten if it exists. Ex: `-OutputPath "C:\MyOutputDir\MyOutputFile.txt"`
+**-OutputPath** &ndash; Optional. If set, indicates the text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. Ex: `-OutputPath "C:\MyOutputDir\MyOutputFile.txt"`
 
 **-ScriptType** &ndash; Optional. Used to differentiate different script types with the *-Verbose* and *-WhatIf* flags. Default value: "Sql Script". Ex: `-ScriptType "Sql Script"` 
 
@@ -68,7 +68,7 @@ Invoke-MedmSolution `
 
 **-DbName** &ndash; Required. The target SQL Server database name. Ex: `-DbName "MARKITEDM_DEV_DX"`
 
-**-SetupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed prior to Solution invocation. If omitted, defaults to the current directory. Ex: `-SetupSqlDir "C:\MySetupSqlDir"`
+**-SetupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed prior to Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SetupSqlDir "C:\MySetupSqlDir"`
 
 **-SetupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated with *-SetupSqlDir*. Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"`
 
@@ -76,7 +76,7 @@ Invoke-MedmSolution `
 
 **-SolutionParams** &ndash; Optional. A delimited list of Solution parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". Ex: `-SolutionParams "param1=value1:param2=value2"`
 
-**-CleanupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyCleanupSqlDir"`
+**-CleanupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyCleanupSqlDir"`
 
 **-CleanupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed following Solution invocation. All must be located within the directory indicated with *-CleanupSqlDir*. Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"`
 
@@ -112,7 +112,7 @@ Test-MedmSolution `
 
 **-DbName** &ndash; Required. The target SQL Server database name. Ex: `-DbName "MARKITEDM_DEV_DX"`
 
-**-SetupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed prior to Solution invocation. If omitted, defaults to the current directory. Ex: `-SetupSqlDir "C:\MySetupSqlDir"`
+**-SetupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed prior to Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SetupSqlDir "C:\MySetupSqlDir"`
 
 **-SetupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated with *-SetupSqlDir*. Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"`
 
@@ -120,19 +120,19 @@ Test-MedmSolution `
 
 **-SolutionParams** &ndash; Optional. A delimited list of Solution parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". Ex: `-SolutionParams "param1=value1:param2=value2"`
 
-**-ResultSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation to extract test results. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyResultSqlDir"`
+**-ResultSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation to extract test results. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyResultSqlDir"`
 
 **-ResultSqlFiles** &ndash; Required. A comma-delimited list of SQL script files to be executed following Solution invocation to extract test results. All must be located within the directory indicated with *-ResultSqlDir*. Ex: `-ResultSqlFiles "MyResultSqlFile1.sql,MyResultSqlFile2.sql"`
 
-**-CleanupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation and test result extraction. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyCleanupSqlDir"`
+**-CleanupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation and test result extraction. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyCleanupSqlDir"`
 
 **-CleanupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed following Solution invocation and test result extraction. All must be located within the directory indicated with *-CleanupSqlDir*. Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"`
 
-**-TestResultPath** &ndash; Required. Indicates the text file to which all test result script outputs will be written. File will be overwritten if it exists. Ex: `-TestResultPath "C:\MyTestDir\MyTestResult.txt"`
+**-TestResultPath** &ndash; Required. Indicates the text file to which all test result script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. Ex: `-TestResultPath "C:\MyTestDir\MyTestResult.txt"`
 
-**-CertifiedResultPath** &ndash; Optional. Indicates the text file against which the file indicated with *-TestResultPath* will be compared. If specified, BeyondCompare will be launched following test execution to compare the two files. Ex: `-CertifiedResultPath "C:\MyTestDir\MyCertifiedResult.txt"`
+**-CertifiedResultPath** &ndash; Optional. Indicates the text file against which the file indicated with *-TestResultPath* will be compared. If specified, BeyondCompare will be launched following test execution to compare the two files. Relative paths will be resolved relative to the current directory. Ex: `-CertifiedResultPath "C:\MyTestDir\MyCertifiedResult.txt"`
 
-**-BeyondComparePath** &ndash; Optional. Path to the BeyondCompare executable. Default value: "C:\Program Files\Beyond Compare 4\BCompare.exe". Ex: `-BeyondComparePath "C:\Program Files\Beyond Compare 4\BCompare.exe"`
+**-BeyondComparePath** &ndash; Optional. Path to the BeyondCompare executable. Relative paths will be resolved relative to the current directory. Default value: "C:\Program Files\Beyond Compare 4\BCompare.exe". Ex: `-BeyondComparePath "C:\Program Files\Beyond Compare 4\BCompare.exe"`
 
 
 

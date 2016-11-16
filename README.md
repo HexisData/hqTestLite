@@ -11,7 +11,7 @@ In this version of hqTest, a test is expressed as a short PowerShell script that
 1. Optionally executes one or more cleanup scripts, normally intended to restore the database to its pre-test state.
 1. Optionally launches BeyondCompare to display the difference between the current test result file and some designated, previously certified test result file.
 
-A typical test script will look something like this (see [SampleTest.ps1]):
+A typical test script will look something like this (see [SampleTest.ps1](SampleTest.ps1)):
 
 ```powershell
 # Locate the hqTestLite module in a central repository to make it easy to upgrade.
@@ -20,7 +20,7 @@ Import-Module "\\netshare\hqTestLite.psm1" -Force
 # Override global defaults with values specific to the test environment.
 Invoke-Expression ".\EnvironmentOverrides.ps1"
 
-# Using global defaults for ProcessAGentPath, DbServer, and DbName.
+# Using global variables for ProcessAgentPath, DbServer, and DbName.
 # Leaving out directory params assuming SQL scripts are co-located with the test script. 
 Test-MedmSolution `
     -SetupSqlFiles "MySolution_Setup.sql" `
@@ -64,9 +64,9 @@ Invoke-SqlScripts `
 
 #### Parameters
 
-**-DbServer** &ndash; Required. The target SQL Server database server address. Ex: `-DbServer "nt7565"`
+**-DbServer** &ndash; Required. The target SQL Server database server address. Ex: `-DbServer "MyDbServer"`
 
-**-DbName** &ndash; Required. The target SQL Server database name. Ex: `-DbName "MARKITEDM_DEV_DX"`
+**-DbName** &ndash; Required. The target SQL Server database name. Ex: `-DbName "MyDb"`
 
 **-SqlDir** &ndash; Optional. The directory containing the SQL scripts to be executed. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SqlDir "C:\MySqlDir"`
 
@@ -74,7 +74,7 @@ Invoke-SqlScripts `
 
 **-OutputPath** &ndash; Optional. If set, indicates the text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. Ex: `-OutputPath "C:\MyOutputDir\MyOutputFile.txt"`
 
-**-ScriptType** &ndash; Optional. Used to differentiate different script types with the *-Verbose* and *-WhatIf* flags. Default value: "Sql Script". Ex: `-ScriptType "Sql Script"` 
+**-ScriptType** &ndash; Optional. Used to differentiate different script types with the *-Verbose* and *-WhatIf* flags. Default to the value of *$Global:DefaultSqlScriptType*. Ex: `-ScriptType "Sql Script"` 
 
 ### Invoke-MedmSolution
 
@@ -84,9 +84,9 @@ Executes a Markit EDM Solution. Optionally executes a set of SQL setup scripts p
 
 ```
 Invoke-MedmSolution `
-    -ProcessAgentPath <string> `
-    -DbServer <string> `
-    -DbName <string> `
+    [-ProcessAgentPath <string>] `
+    [-DbServer <string>] `
+    [-DbName <string>] `
     [-SetupSqlDir <string>] `
     [-SetupSqlFiles <string>] `
     -SolutionName <string> `
@@ -97,11 +97,11 @@ Invoke-MedmSolution `
 
 #### Parameters
 
-**-ProcessAgentPath** &ndash; Required. Path to *CADISProcessAgent.exe* for target MEDM version. Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CADISProcessAgent.exe"`
+**-ProcessAgentPath** &ndash; Optional. Path to *CADISProcessAgent.exe* for target MEDM version. Defaults to the value of *$Global:DefaultMedmProcessAgentPath*. Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CADISProcessAgent.exe"`
 
-**-DbServer** &ndash; Required. The target SQL Server database server address. Ex: `-DbServer "nt7565"`
+**-DbServer** &ndash; Optional. Defaults to the value of *$Global:DefaultMedmProcessAgentPath*. The target SQL Server database server address. Defaults to the value of *$Global:DefaultMedmDbServer*. Ex: `-DbServer "MyDbServer"`
 
-**-DbName** &ndash; Required. The target SQL Server database name. Ex: `-DbName "MARKITEDM_DEV_DX"`
+**-DbName** &ndash; Optional. The target SQL Server database name. Defaults to the value of *$Global:DefaultMedmDbName*. Ex: `-DbName "MyDb"`
 
 **-SetupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed prior to Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SetupSqlDir "C:\MySetupSqlDir"`
 
@@ -123,9 +123,9 @@ Tests a Markit EDM Solution by optionally running setup scripts, executing the S
 
 ```
 Test-MedmSolution `
-    -ProcessAgentPath <string> `
-    -DbServer <string> `
-    -DbName <string> `
+    [-ProcessAgentPath <string>] `
+    [-DbServer <string>] `
+    [-DbName <string>] `
     [-SetupSqlDir <string>] `
     [-SetupSqlFiles <string>] `
     -SolutionName <string> `
@@ -141,11 +141,11 @@ Test-MedmSolution `
 
 #### Parameters
 
-**-ProcessAgentPath** &ndash; Required. Path to *CADISProcessAgent.exe* for target MEDM version. Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CADISProcessAgent.exe"`
+**-ProcessAgentPath** &ndash; Required. Path to *CADISProcessAgent.exe* for target MEDM version. Defaults to the value of *$Global:DefaultMedmProcessAgentPath*. Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CADISProcessAgent.exe"`
 
-**-DbServer** &ndash; Required. The target SQL Server database server address. Ex: `-DbServer "nt7565"`
+**-DbServer** &ndash; Required. The target SQL Server database server address. Defaults to the value of *$Global:DefaultMedmDbServer*. Ex: `-DbServer "MyDbServer"`
 
-**-DbName** &ndash; Required. The target SQL Server database name. Ex: `-DbName "MARKITEDM_DEV_DX"`
+**-DbName** &ndash; Required. The target SQL Server database name. Defaults to the value of *$Global:DefaultMedmDbName*. Ex: `-DbName "MyDb"`
 
 **-SetupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed prior to Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SetupSqlDir "C:\MySetupSqlDir"`
 
@@ -167,8 +167,4 @@ Test-MedmSolution `
 
 **-CertifiedResultPath** &ndash; Optional. Indicates the text file against which the file indicated with *-TestResultPath* will be compared. If specified, BeyondCompare will be launched following test execution to compare the two files. Relative paths will be resolved relative to the current directory. Ex: `-CertifiedResultPath "C:\MyTestDir\MyCertifiedResult.txt"`
 
-**-BeyondComparePath** &ndash; Optional. Path to the BeyondCompare executable. Relative paths will be resolved relative to the current directory. Default value: "C:\Program Files\Beyond Compare 4\BCompare.exe". Ex: `-BeyondComparePath "C:\Program Files\Beyond Compare 4\BCompare.exe"`
-
-
-
-
+**-BeyondComparePath** &ndash; Optional. Path to the BeyondCompare executable. Relative paths will be resolved relative to the current directory. Defaults to the value of *$Global:DefaultBeyondComparePath*. Ex: `-BeyondComparePath "C:\Program Files\Beyond Compare 4\BCompare.exe"`

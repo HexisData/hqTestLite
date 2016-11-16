@@ -158,16 +158,13 @@ function Test-MedmSolution {
         -SetupSqlFiles $SetupSqlFiles 
 
     # Invoke result scripts.
-    "Beginning Result Query execution against database " + $DbServer + "\" + $DbName | Write-Verbose
-    if ($PSCmdlet.ShouldProcess("Result Query")) {
-        "" | Out-File -FilePath $TestResultPath
-        $ResultSqlFiles.Split(",") | ForEach {
-            "========== " + $_ + " ==========" | Out-File -FilePath $TestResultPath -Append
-            $ResultSqlFile = Join-Path -Path $ResultSqlDir -ChildPath $_
-            Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $ResultSqlFile | Out-File -FilePath $TestResultPath -Append
-        }
-    }
-    "Completed Result Query execution against database " + $DbServer + "\" + $DbName | Write-Verbose
+    Invoke-SqlScripts `
+        -DbServer $DbServer `
+        -DbName $DbName `
+        -SqlDir $ResultSqlDir `
+        -SqlFiles $ResultSqlFiles `
+        -ScriptType "Result Query" `
+        -OutputPath $TestResultPath
 
     # Invoke cleanup scripts.
     if ($CleanupSqlFiles) {

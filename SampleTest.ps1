@@ -1,10 +1,10 @@
-﻿# Locate the hqTestLite module in a central repository to make it easy to upgrade.
+# Locate the hqTestLite module in a central repository to make it easy to upgrade.
 Import-Module "\\netshare\hqTestLite.psm1" -Force
 
 # Override global defaults with values specific to the test environment.
 Invoke-Expression ".\EnvironmentOverrides.ps1"
 
-# Using global defaults for ProcessAGentPath, DbServer, and DbName.
+# Using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath.
 # Leaving out directory params assuming SQL scripts are co-located with the test script. 
 Test-MedmSolution `
     -SetupSqlFiles "MySolution_Setup.sql" `

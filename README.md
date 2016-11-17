@@ -18,7 +18,7 @@ A typical test script will look something like this (see [SampleTest.ps1](Sample
 Import-Module "\\netshare\hqTestLite.psm1" -Force
 
 # Override global defaults with values specific to the test environment.
-Invoke-Expression "\\netshare\Test\EnvironmentOverrides.ps1"
+Invoke-Expression "\\netshare\Test\config.ps1"
 
 # Using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath.
 # Leaving out directory params assuming SQL scripts are co-located with the test script. 
@@ -48,7 +48,7 @@ The following global variables may be overridden:
 
 **$Global:DefaultSqlScriptType** &ndash; The default script type token to use when *-Verbose* or *-WhatIf* are activated. Useful for troubleshooting.
 
-See [EnvironmentOverrides.ps1](EnvironmentOverrides.ps1) for a typical example of an environment override script.
+See [config.ps1](config.ps1) for a typical example of an environment configuration script.
 
 ## Cmdlets
 

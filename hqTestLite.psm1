@@ -8,11 +8,9 @@ function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
 
     Param(
-        [Parameter(Mandatory = $True)]
-        [string]$DbServer,
+        [string]$DbServer = $Global:DefaultMedmDbServer,
 
-        [Parameter(Mandatory = $True)]
-        [string]$DbName,
+        [string]$DbName = $Global:DefaultMedmDbName,
 
         [string]$SqlDir = $null,
 

@@ -75,12 +75,14 @@ function Invoke-MedmSolution {
     )
 
     # Invoke setup scripts.
-    Invoke-SqlScripts `
-        -DbServer $DbServer `
-        -DbName $DbName `
-        -SqlDir $SetupSqlDir `
-        -SqlFiles $SetupSqlFiles `
-        -ScriptType "Setup Script"
+    if ($SetupSqlFiles) {
+        Invoke-SqlScripts `
+            -DbServer $DbServer `
+            -DbName $DbName `
+            -SqlDir $SetupSqlDir `
+            -SqlFiles $SetupSqlFiles `
+            -ScriptType "Setup Script"
+    }
 
     # Compose MEDM solution invocation.
     $params = "/server:" + $DbServer

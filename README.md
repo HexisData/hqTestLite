@@ -73,7 +73,8 @@ Invoke-SqlScripts `
     [-SqlDir <string>] `
     -SqlFiles <string> `
     [-ScriptType <string>] `
-    [-OutputPath <string>]
+    [-OutputPath <string>] `
+    [-OutputTable]
 ```
 
 #### Parameters
@@ -89,6 +90,8 @@ Invoke-SqlScripts `
 **-OutputPath** &ndash; Optional. If set, indicates the text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. Ex: `-OutputPath "C:\MyOutputDir\MyOutputFile.txt"`
 
 **-ScriptType** &ndash; Optional. Used to differentiate different script types with the *-Verbose* and *-WhatIf* flags. Defaults to the value of *$Global:DefaultSqlScriptType*. Ex: `-ScriptType "Sql Script"` 
+
+**-OutputTable** &ndash; Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. Ex: `-OutputTable` 
 
 ### Invoke-MedmSolution
 
@@ -150,7 +153,8 @@ Test-MedmSolution `
     [-CleanupSqlFiles <string>] `
     -TestResultPath <string> `
     [-CertifiedResultPath <string>] `
-    [-BeyondComparePath <string>]
+    [-BeyondComparePath <string>] `
+    [-OutputTable]
 ```
 
 #### Parameters
@@ -182,3 +186,5 @@ Test-MedmSolution `
 **-CertifiedResultPath** &ndash; Optional. Indicates the text file against which the file indicated with *-TestResultPath* will be compared. If specified, BeyondCompare will be launched following test execution to compare the two files. Relative paths will be resolved relative to the current directory. Ex: `-CertifiedResultPath "C:\MyTestDir\MyCertifiedResult.txt"`
 
 **-BeyondComparePath** &ndash; Optional. Path to the BeyondCompare executable. Relative paths will be resolved relative to the current directory. Defaults to the value of *$Global:DefaultBeyondComparePath*. Ex: `-BeyondComparePath "C:\Program Files\Beyond Compare 4\BCompare.exe"`
+
+**-OutputTable** &ndash; Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. Ex: `-OutputTable` 

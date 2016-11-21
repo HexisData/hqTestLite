@@ -11,7 +11,7 @@ In this version of hqTest, a test is expressed as a short PowerShell script that
 1. Optionally executes one or more cleanup scripts, normally intended to restore the database to its pre-test state.
 1. Optionally launches BeyondCompare to display the difference between the current test result file and some designated, previously certified test result file.
 
-A typical test script will look something like this (see [SampleTest.ps1](SampleTest.ps1)):
+A typical test script will look something like this (see [SampleTest.ps1](../hqTestLite/SampleTest.ps1)):
 
 ```powershell
 # Locate the hqTestLite module in a central repository to make it easy to upgrade.
@@ -34,7 +34,7 @@ Test-MedmSolution `
 
 ## Global Defaults
 
-The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, many of these values should be overridden on a per-environment basis as illustrated in [SampleTest.ps1](SampleTest.ps1). 
+The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, many of these values should be overridden on a per-environment basis as illustrated in [SampleTest.ps1](../hqTestLite/SampleTest.ps1). 
 
 The following global variables may be overridden:
 
@@ -48,7 +48,7 @@ The following global variables may be overridden:
 
 **$Global:DefaultSqlScriptType** &ndash; The default script type token to use when *-Verbose* or *-WhatIf* are activated. Useful for troubleshooting.
 
-See [config.ps1](config.ps1) for a typical example of an environment configuration script.
+See [config.ps1](../hqTestLite/config.ps1) for a typical example of an environment configuration script.
 
 ## Cmdlets
 

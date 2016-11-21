@@ -21,7 +21,9 @@ function Invoke-SqlScripts {
 
         [string]$OutputPath = $null,
 
-        [string]$ScriptType = $Global:DefaultSqlScriptType
+        [string]$ScriptType = $Global:DefaultSqlScriptType,
+
+		[switch]$OutputTable
     )
 
     # Default $SqlDir to current location.
@@ -29,15 +31,20 @@ function Invoke-SqlScripts {
 
     # Iterate through $Sql list & execute each in turn.
     if ($SqlFiles) {
-        "Beginning " + $ScriptType + " execution against database " + $DbServer + "\" + $DbName | Write-Verbose
+        "Beginning $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
         Push-Location
         if ($OutputPath) { "" | Out-File -FilePath $OutputPath }
         $SqlFiles.Split(",") | ForEach {
             $SqlPath = Join-Path -Path $SqlDir -ChildPath $_
-            if ($PSCmdlet.ShouldProcess($ScriptType + " " + $_)) {
+            if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
                 if ($OutputPath) { 
-                    "========== " + $_ + " ==========" | Out-File -FilePath $OutputPath -Append 
-                    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List | Out-File -FilePath $OutputPath -Append
+                    "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
+					if ($OutputTable) {
+						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -AutoSize | Out-File -FilePath $OutputPath -Append
+					}
+					else {
+						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List | Out-File -FilePath $OutputPath -Append
+					}
                 }
                 else { 
                     Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 
@@ -45,7 +52,7 @@ function Invoke-SqlScripts {
             }
         }
         Pop-Location
-        "Completed " + $ScriptType + " execution against database " + $DbServer + "\" + $DbName | Write-Verbose
+        "Completed $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
     }
 }
 
@@ -85,20 +92,13 @@ function Invoke-MedmSolution {
     }
 
     # Compose MEDM solution invocation.
-    $params = "/server:" + $DbServer
-    $params = $params + " /db:" + $DbName
-    $params = $params + " /integrated:yes"
-    $params = $params + " /component:Solution"
-    $params = $params + " /process:`"" + $SolutionName + "`""
-    $params = $params + " /usedefaultforparams:yes"
+    $params = "/server:$($DbServer) /db:$($DbName) /integrated:yes /component:Solution /process:`"$($SolutionName)`" /usedefaultforparams:yes"
     if ($SolutionParams) {$params = $params + " /parameters:`"" + $SolutionParams.Replace(":", "`":`"").Replace("=", "`"=`"") + "`""}
 
     # Execute MEDM solution.
-    "Beginning execution of MEDM Solution `"" + $SolutionName + "`" on database " + $DbServer + "\" + $DbName | Write-Verbose  
-    if ($PSCmdlet.ShouldProcess("MEDM Solution " + $SolutionName)) {
-        & $ProcessAgentPath $params
-    }
-    "Completed execution of MEDM Solution `"" + $SolutionName + "`" on database " + $DbServer + "\" + $DbName | Write-Verbose  
+    "Beginning execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
+    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params}
+    "Completed execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
 
     # Invoke cleanup scripts.
     if ($CleanupSqlFiles) {
@@ -179,11 +179,11 @@ function Test-MedmSolution {
     }
 
     if ($CertifiedResultPath) {
-        $params = "`"" + $TestResultPath + "`" `"" + $CertifiedResultPath + "`" /readonly"
+        $params = "`"$($TestResultPath)`" `"$($CertifiedResultPath)`" /readonly"
 
         "Displaying difference between actual & certified results." | Write-Verbose  
         if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
-        else {"`"" + $BeyondComparePath + "`" " + $params | Out-Host}
+        else {"`"$($BeyondComparePath)`" $($params)" | Out-Host}
     }
 }
 

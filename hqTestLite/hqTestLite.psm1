@@ -40,7 +40,7 @@ function Invoke-SqlScripts {
                 if ($OutputPath) { 
                     "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
 					if ($OutputTable) {
-						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -AutoSize | Out-File -FilePath $OutputPath -Append
+						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -AutoSize -Wrap | Out-File -FilePath $OutputPath -Append
 					}
 					else {
 						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List | Out-File -FilePath $OutputPath -Append
@@ -146,7 +146,9 @@ function Test-MedmSolution {
 
         [string]$CertifiedResultPath = $null,
 
-        [string]$BeyondComparePath = $Global:DefaultBeyondComparePath
+        [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
+
+		[switch]$OutputTable
     )
 
     # Invoke setup scripts and MEDM solution.
@@ -166,7 +168,8 @@ function Test-MedmSolution {
         -SqlDir $ResultSqlDir `
         -SqlFiles $ResultSqlFiles `
         -ScriptType "Result Query" `
-        -OutputPath $TestResultPath
+        -OutputPath $TestResultPath `
+        -OutputTable:$OutputTable
 
     # Invoke cleanup scripts.
     if ($CleanupSqlFiles) {

@@ -26,12 +26,16 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="DB\" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="config.ps1" />
+    <Compile Include="DB\hq.tvf_Core_Sequence.sql" />
+    <Compile Include="DB\hq.tvf_Core_Split_Delimiter.sql" />
+    <Compile Include="DB\hq.usp_Core_DumpData.sql" />
     <Compile Include="hqTestLite.psd1" />
     <Compile Include="hqTestLite.psm1" />
-    <Compile Include="hqTestLite.tests.ps1" />
     <Compile Include="SampleTest.ps1" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

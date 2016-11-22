@@ -13,7 +13,7 @@ A PowerShell version of hqTest. Currently only supports testing of Markit EDM So
 
 **DB/hq.tvf_Core_Split_Delimiter** &ndash; Utility UDF that splits a delimited list into a rowset.
 
-**DB/hq.usp_Core_DumpData** &ndash; Utility SP that dynamically extracts data from a table or view.
+**DB/hq.usp_Core_DumpData** &ndash; Utility SP that dynamically extracts data from a table or view. Useful in result scripts as it can exclude columns by pattern and automatically pick up on object schema changes.
 
 ## Usage
 

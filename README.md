@@ -1,6 +1,20 @@
 # hqTestLite
 A PowerShell version of hqTest. Currently only supports testing of Markit EDM Solutions.
 
+## Contents
+
+**hqTestLite.psm1** &ndash; hqTestLite PowerShell module.
+
+**config.ps1** &ndash; Sample environment configuration script.
+
+**SampleTest.ps1** &ndash; Sample test script.
+
+**DB/hq.tvf_Core_Sequence** &ndash; Utility UDF that generates a sequence of integers in a rowset.
+
+**DB/hq.tvf_Core_Split_Delimiter** &ndash; Utility UDF that splits a delimited list into a rowset.
+
+**DB/hq.usp_Core_DumpData** &ndash; Utility SP that dynamically extracts data from a table or view.
+
 ## Usage
 
 In this version of hqTest, a test is expressed as a short PowerShell script that invokes the *Test-MedmSolution* cmdlet. This cmdlet performs the following tasks:
@@ -57,8 +71,6 @@ See [config.ps1](./hqTestLite/config.ps1) for a typical example of an environmen
 **Invoke-MedmSolution** &ndash; Executes a Markit EDM Solution. Optionally executes a set of SQL setup scripts prior to Solution execution and a set of cleanup scripts after Solution execution.
 
 **Test-MedmSolution** &ndash; Tests a Markit EDM Solution by optionally running setup scripts, executing the Solution, running a set of result scripts and sending their output to a file, optionally running cleanup scripts, and then invoking BeyondCompare to display the dfference between the actual test result file and a previously staged certified result file.
-
-## Cmdlet Syntax
 
 ### Invoke-SqlScripts
 

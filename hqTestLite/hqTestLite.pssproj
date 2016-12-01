@@ -39,6 +39,9 @@
     <Compile Include="hqTestLite.psm1" />
     <Compile Include="SampleTest.ps1" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="DB\README.md" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="Build" />
 </Project>

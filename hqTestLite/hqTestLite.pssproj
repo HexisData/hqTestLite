@@ -34,6 +34,7 @@
     <Compile Include="DB\hq.tvf_Core_Sequence.sql" />
     <Compile Include="DB\hq.tvf_Core_Split_Delimiter.sql" />
     <Compile Include="DB\hq.usp_Core_DumpData.sql" />
+    <Compile Include="DB\hq.usp_Test_VerifyTable.sql" />
     <Compile Include="hqTestLite.psd1" />
     <Compile Include="hqTestLite.psm1" />
     <Compile Include="SampleTest.ps1" />

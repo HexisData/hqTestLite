@@ -134,7 +134,7 @@ function Test-MedmSolution {
 
         [string]$ResultSqlDir,
 
-        [Parameter(Mandatory = $True)]
+        #[Parameter(Mandatory = $True)]
         [string]$ResultSqlFiles,
 
         [string]$CleanupSqlDir = $null,
@@ -162,14 +162,16 @@ function Test-MedmSolution {
         -SetupSqlFiles $SetupSqlFiles 
 
     # Invoke result scripts.
-    Invoke-SqlScripts `
-        -DbServer $DbServer `
-        -DbName $DbName `
-        -SqlDir $ResultSqlDir `
-        -SqlFiles $ResultSqlFiles `
-        -ScriptType "Result Query" `
-        -OutputPath $TestResultPath `
-        -OutputTable:$OutputTable
+	if ($ResultSqlFiles) {
+		Invoke-SqlScripts `
+			-DbServer $DbServer `
+			-DbName $DbName `
+			-SqlDir $ResultSqlDir `
+			-SqlFiles $ResultSqlFiles `
+			-ScriptType "Result Query" `
+			-OutputPath $TestResultPath `
+			-OutputTable:$OutputTable
+	}
 
     # Invoke cleanup scripts.
     if ($CleanupSqlFiles) {
@@ -189,4 +191,3 @@ function Test-MedmSolution {
         else {"`"$($BeyondComparePath)`" $($params)" | Out-Host}
     }
 }
-

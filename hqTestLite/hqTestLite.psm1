@@ -81,7 +81,47 @@ function Invoke-MedmSolution {
         [string]$CleanupSqlFiles = $null
     )
 
-    # Invoke setup scripts.
+	Invoke-MedmComponent `
+		-ProcessAgentPath $ProcessAgentPath `
+		-DbServer $DbServer `
+		-DbName $DbName `
+		-SetupSqlDir $SetupSqlDir `
+		-SetupSqlFiles $SetupSqlFiles `
+		-ComponentType Solution `
+		-ComponentName $SolutionName `
+		-ConfigurableParams $SolutionParams `
+		-CleanupSqlDir $CleanupSqlDir `
+		-CleanupSqlFiles $CleanupSqlFiles
+
+}
+
+function Invoke-MedmComponent {
+	    Param(
+        [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
+
+        [string]$DbServer = $Global:DefaultMedmDbServer,
+
+        [string]$DbName = $Global:DefaultMedmDbName,
+
+        [string]$SetupSqlDir = $null,
+
+        [string]$SetupSqlFiles = $null,
+
+        [Parameter(Mandatory = $True)]
+        [string]$ComponentName,
+
+		[Parameter(Mandatory = $True)]
+		[ValidateSet("DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution")]
+		[string]$ComponentType,
+
+        [string]$ConfigurableParams = $null,
+
+        [string]$CleanupSqlDir = $null,
+
+        [string]$CleanupSqlFiles = $null
+    )
+	
+	# Invoke setup scripts.
     if ($SetupSqlFiles) {
         Invoke-SqlScripts `
             -DbServer $DbServer `
@@ -91,11 +131,11 @@ function Invoke-MedmSolution {
             -ScriptType "Setup Script"
     }
 
-    # Compose MEDM solution invocation.
-    $params = "/server:$($DbServer) /db:$($DbName) /integrated:yes /component:Solution /process:`"$($SolutionName)`" /usedefaultforparams:yes"
+	# Compose MEDM component invocation.
+    $params = "/server:$($DbServer) /db:$($DbName) /integrated:yes /component:$($ComponentType) /process:`"$($ComponentName)`" /usedefaultforparams:yes"
     if ($SolutionParams) {$params = $params + " /parameters:`"" + $SolutionParams.Replace(":", "`":`"").Replace("=", "`"=`"") + "`""}
 
-    # Execute MEDM solution.
+	# Execute MEDM solution.
     "Beginning execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
     if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params}
     "Completed execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
@@ -108,6 +148,92 @@ function Invoke-MedmSolution {
             -SqlDir $CleanupSqlDir `
             -SqlFiles $CleanupSqlFiles `
             -ScriptType "Cleanup Script"
+    }
+
+}
+
+function Test-MedmComponent {
+
+    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+
+    Param(
+        [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
+
+        [string]$DbServer = $Global:DefaultMedmDbServer,
+
+        [string]$DbName = $Global:DefaultMedmDbName,
+
+        [string]$SetupSqlDir = $null,
+
+        [string]$SetupSqlFiles = $null,
+
+        [Parameter(Mandatory = $True)]
+        [string]$ComponentName,
+
+		[Parameter(Mandatory = $True)]
+		[ValidateSet("DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution")]
+		[string]$ComponentType,
+
+        [string]$ConfigurableParams = $null,
+
+        [string]$ResultSqlDir,
+
+        #[Parameter(Mandatory = $True)]
+        [string]$ResultSqlFiles,
+
+        [string]$CleanupSqlDir = $null,
+
+        [string]$CleanupSqlFiles = $null,
+
+        [Parameter(Mandatory = $True)]
+        [string]$TestResultPath,
+
+        [string]$CertifiedResultPath = $null,
+
+        [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
+
+		[switch]$OutputTable
+    )
+
+    # Invoke setup scripts and MEDM component.
+    Invoke-MedmComponent `
+        -ProcessAgentPath $ProcessAgentPath `
+        -DbServer $DbServer `
+        -DbName $DbName `
+		-ComponentType $ComponentType `
+        -ComponentName $ComponentName `
+        -ConfigurableParams $ConfigurableParams `
+        -SetupSqlDir $SetupSqlDir `
+        -SetupSqlFiles $SetupSqlFiles 
+
+    # Invoke result scripts.
+	if ($ResultSqlFiles) {
+		Invoke-SqlScripts `
+			-DbServer $DbServer `
+			-DbName $DbName `
+			-SqlDir $ResultSqlDir `
+			-SqlFiles $ResultSqlFiles `
+			-ScriptType "Result Query" `
+			-OutputPath $TestResultPath `
+			-OutputTable:$OutputTable
+	}
+
+    # Invoke cleanup scripts.
+    if ($CleanupSqlFiles) {
+        Invoke-SqlScripts `
+            -DbServer $DbServer `
+            -DbName $DbName `
+            -SqlDir $CleanupSqlDir `
+            -SqlFiles $CleanupSqlFiles `
+            -ScriptType "Cleanup Script"
+    }
+
+    if ($CertifiedResultPath) {
+        $params = "`"$($TestResultPath)`" `"$($CertifiedResultPath)`" /readonly"
+
+        "Displaying difference between actual & certified results." | Write-Verbose  
+        if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
+        else {"`"$($BeyondComparePath)`" $($params)" | Out-Host}
     }
 }
 
@@ -134,7 +260,7 @@ function Test-MedmSolution {
 
         [string]$ResultSqlDir,
 
-        [Parameter(Mandatory = $True)]
+        #[Parameter(Mandatory = $True)]
         [string]$ResultSqlFiles,
 
         [string]$CleanupSqlDir = $null,
@@ -151,42 +277,21 @@ function Test-MedmSolution {
 		[switch]$OutputTable
     )
 
-    # Invoke setup scripts and MEDM solution.
-    Invoke-MedmSolution `
-        -ProcessAgentPath $ProcessAgentPath `
-        -DbServer $DbServer `
-        -DbName $DbName `
-        -SolutionName $SolutionName `
-        -SolutionParams $SolutionParams `
-        -SetupSqlDir $SetupSqlDir `
-        -SetupSqlFiles $SetupSqlFiles 
-
-    # Invoke result scripts.
-    Invoke-SqlScripts `
-        -DbServer $DbServer `
-        -DbName $DbName `
-        -SqlDir $ResultSqlDir `
-        -SqlFiles $ResultSqlFiles `
-        -ScriptType "Result Query" `
-        -OutputPath $TestResultPath `
-        -OutputTable:$OutputTable
-
-    # Invoke cleanup scripts.
-    if ($CleanupSqlFiles) {
-        Invoke-SqlScripts `
-            -DbServer $DbServer `
-            -DbName $DbName `
-            -SqlDir $CleanupSqlDir `
-            -SqlFiles $CleanupSqlFiles `
-            -ScriptType "Cleanup Script"
-    }
-
-    if ($CertifiedResultPath) {
-        $params = "`"$($TestResultPath)`" `"$($CertifiedResultPath)`" /readonly"
-
-        "Displaying difference between actual & certified results." | Write-Verbose  
-        if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
-        else {"`"$($BeyondComparePath)`" $($params)" | Out-Host}
-    }
+	Test-MedmComponent `
+		-ProcessAgentPath $ProcessAgentPath `
+		-DbServer $DbServer `
+		-DbName $DbName `
+		-SetupSqlDir $SetupSqlDir `
+		-SetupSqlFiles $SetupSqlFiles `
+		-ComponentName $SolutionName `
+		-ComponentType Solution `
+		-ConfigurableParams $SolutionParams `
+		-ResultSqlDir $ResultSqlDir `
+		-ResultSqlFiles $ResultSqlFiles `
+		-CleanupSqlDir $CleanupSqlDir `
+		-CleanupSqlFiles $CleanupSqlFiles `
+		-TestResultPath $TestResultPath `
+		-CertifiedResultPath $CertifiedResultPath `
+		-BeyondComparePath $BeyondComparePath `
+		-OutputTable:$OutputTable.IsPresent
 }
-

@@ -158,41 +158,27 @@ function Test-MedmComponent {
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
-
-        [string]$DbServer = $Global:DefaultMedmDbServer,
-
-        [string]$DbName = $Global:DefaultMedmDbName,
-
-        [string]$SetupSqlDir = $null,
-
-        [string]$SetupSqlFiles = $null,
-
-        [Parameter(Mandatory = $True)]
+		[string]$DbServer = $Global:DefaultMedmDbServer,
+		[string]$DbName = $Global:DefaultMedmDbName,
+		[string]$SetupSqlDir = $null,
+		[string]$SetupSqlFiles = $null,
+		[Parameter(Mandatory = $True)]
         [string]$ComponentName,
-
 		[Parameter(Mandatory = $True)]
 		[ValidateSet("DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution")]
 		[string]$ComponentType,
-
-        [string]$ConfigurableParams = $null,
-
-        [string]$ResultSqlDir,
-
-        #[Parameter(Mandatory = $True)]
+		[string]$ConfigurableParams = $null,
+		[string]$ResultSqlDir,
+		#[Parameter(Mandatory = $True)]
         [string]$ResultSqlFiles,
-
-        [string]$CleanupSqlDir = $null,
-
-        [string]$CleanupSqlFiles = $null,
-
-        [Parameter(Mandatory = $True)]
+		[string]$CleanupSqlDir = $null,
+		[string]$CleanupSqlFiles = $null,
+		[Parameter(Mandatory = $True)]
         [string]$TestResultPath,
-
-        [string]$CertifiedResultPath = $null,
-
-        [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
-
-		[switch]$OutputTable
+		[string]$CertifiedResultPath = $null,
+		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
+		[switch]$OutputTable,
+		[switch]$SupressDiffToolPopup
     )
 
     # Invoke setup scripts and MEDM component.
@@ -228,13 +214,15 @@ function Test-MedmComponent {
             -ScriptType "Cleanup Script"
     }
 
-    if ($CertifiedResultPath) {
+    if (-not($SupressDiffToolPopup.IsPresent) -and $CertifiedResultPath) {
         $params = "`"$($TestResultPath)`" `"$($CertifiedResultPath)`" /readonly"
 
         "Displaying difference between actual & certified results." | Write-Verbose  
         if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
         else {"`"$($BeyondComparePath)`" $($params)" | Out-Host}
     }
+
+
 }
 
 
@@ -274,7 +262,8 @@ function Test-MedmSolution {
 
         [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 
-		[switch]$OutputTable
+		[switch]$OutputTable,
+		[switch]$SupressDiffToolPopup
     )
 
 	Test-MedmComponent `
@@ -293,5 +282,6 @@ function Test-MedmSolution {
 		-TestResultPath $TestResultPath `
 		-CertifiedResultPath $CertifiedResultPath `
 		-BeyondComparePath $BeyondComparePath `
-		-OutputTable:$OutputTable.IsPresent
+		-OutputTable:$OutputTable.IsPresent `
+		-SupressDiffToolPopup:$SupressDiffToolPopup.IsPresent
 }

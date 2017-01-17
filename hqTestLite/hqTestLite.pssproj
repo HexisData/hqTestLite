@@ -37,6 +37,10 @@
     <Compile Include="hqTestLite.psd1" />
     <Compile Include="hqTestLite.psm1" />
     <Compile Include="SampleTest.ps1" />
+    <Compile Include="tester.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="certified.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="Build" />

@@ -178,8 +178,10 @@ function Test-MedmComponent {
 		[string]$CertifiedResultPath = $null,
 		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 		[switch]$OutputTable,
-		[switch]$SupressDiffToolPopup
+		[switch]$SupressDiffToolPopup,
+		[string]$TestName
     )
+	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
 
     # Invoke setup scripts and MEDM component.
     Invoke-MedmComponent `
@@ -190,7 +192,8 @@ function Test-MedmComponent {
         -ComponentName $ComponentName `
         -ConfigurableParams $ConfigurableParams `
         -SetupSqlDir $SetupSqlDir `
-        -SetupSqlFiles $SetupSqlFiles 
+        -SetupSqlFiles $SetupSqlFiles `
+	| Write-Host
 
     # Invoke result scripts.
 	if ($ResultSqlFiles) {
@@ -214,6 +217,8 @@ function Test-MedmComponent {
             -ScriptType "Cleanup Script"
     }
 
+	$stopWatch.Stop()
+
     if (-not($SupressDiffToolPopup.IsPresent) -and $CertifiedResultPath) {
         $params = "`"$($TestResultPath)`" `"$($CertifiedResultPath)`" /readonly"
 
@@ -222,7 +227,19 @@ function Test-MedmComponent {
         else {"`"$($BeyondComparePath)`" $($params)" | Out-Host}
     }
 
-
+	# get diff to produce test results
+	if ($CertifiedResultPath) {
+		$diff = Compare-Object (Get-Content $CertifiedResultPath) (Get-Content $TestResultPath)
+		$result = @{
+			Status = %{if (0 -eq $diff.Count) {"PASSED"} else {"FAILED"}}
+			Time = $stopWatch.Elapsed
+			Name = $TestName
+		}
+		#if ($result.Status -eq "FAILED") {
+		#	$result.Reason
+		#}
+		return $result
+	}
 }
 
 

@@ -2,8 +2,8 @@ Clear-Host
 Import-Module "$($PSScriptRoot)\..\src\hqTestLite.psm1" -Force
 
 # note to use this example, you will need to replace values in the following two lines, as well as change the value of -ComponentName and -TestResultPath
-$Global:DefaultMedmDbServer = "nt7565"
-$Global:DefaultMedmDbName = "MARKITEDM_DEV_DX"
+$Global:DefaultMedmDbServer = "DbServer"
+$Global:DefaultMedmDbName = "DbName"
 
 # an array to hold test results that get returned from calls to Test-* methods
 $results = @()

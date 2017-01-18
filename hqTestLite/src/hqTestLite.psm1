@@ -3,6 +3,7 @@ $Global:DefaultMedmDbServer = "MyMedmDbServer"
 $Global:DefaultMedmDbName = "MyMedmDb"
 $Global:DefaultBeyondComparePath = "C:\Program Files\Beyond Compare 4\BCompare.exe"
 $Global:DefaultSqlScriptType = "Sql Script"
+$Global:DefaultReportFolder = "C:\tmp"
 
 function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
@@ -178,7 +179,7 @@ function Test-MedmComponent {
 		[string]$CertifiedResultPath = $null,
 		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 		[switch]$OutputTable,
-		[switch]$SupressDiffToolPopup,
+		[switch]$SuppressDiffToolPopup,
 		[string]$TestName
     )
 	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
@@ -219,7 +220,7 @@ function Test-MedmComponent {
 
 	$stopWatch.Stop()
 
-    if (-not($SupressDiffToolPopup.IsPresent) -and $CertifiedResultPath) {
+    if (-not($SuppressDiffToolPopup.IsPresent) -and $CertifiedResultPath) {
         $params = "`"$($TestResultPath)`" `"$($CertifiedResultPath)`" /readonly"
 
         "Displaying difference between actual & certified results." | Write-Verbose  
@@ -232,13 +233,13 @@ function Test-MedmComponent {
 		$diff = Compare-Object (Get-Content $CertifiedResultPath) (Get-Content $TestResultPath)
 		$result = @{
 			Status = %{if (0 -eq $diff.Count) {"PASSED"} else {"FAILED"}}
-			Time = $stopWatch.Elapsed
+			Time = $stopWatch.Elapsed.TotalMilliseconds
 			Name = $TestName
 		}
 		#if ($result.Status -eq "FAILED") {
 		#	$result.Reason
 		#}
-		return $result
+		return New-Object PSObject -Property $result
 	}
 }
 
@@ -280,7 +281,7 @@ function Test-MedmSolution {
         [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 
 		[switch]$OutputTable,
-		[switch]$SupressDiffToolPopup
+		[switch]$SuppressDiffToolPopup
     )
 
 	Test-MedmComponent `
@@ -300,5 +301,66 @@ function Test-MedmSolution {
 		-CertifiedResultPath $CertifiedResultPath `
 		-BeyondComparePath $BeyondComparePath `
 		-OutputTable:$OutputTable.IsPresent `
-		-SupressDiffToolPopup:$SupressDiffToolPopup.IsPresent
+		-SuppressDiffToolPopup:$SuppressDiffToolPopup.IsPresent
+}
+
+function Publish-Results {
+	Param(
+		[string]$ReportFolder = $Global:DefaultReportFolder,
+		[Parameter(Mandatory = $True)]
+		[string]$TestSuiteName,
+		[Object[]]$Results,
+		[ValidateSet("JUnit")]
+		[string]$ReportFormat = "JUnit"
+	)
+
+	if ($ReportFormat -eq "JUnit") {
+		$template = @'
+<testsuite name="" tests="" failures="" timestamp="" time="" package="hqTestLite">
+<testcase classname="" name="" time="">
+    <failure type="" message=""/>
+</testcase>
+</testsuite>
+'@
+
+		# load XML template 
+		$xml = New-Object xml		
+		$xml.LoadXml($template)
+		$newTestCaseTemplate = (@($xml.testsuite.testcase)[0]).Clone()  
+
+		# populate suite-level attributes
+		$xml.testsuite.name = $TestSuiteName
+		$xml.testsuite.tests = $Results.Count.ToString()
+		$xml.testsuite.timestamp = (Get-Date -Format u).ToString()
+		$totalTime = ($Results | Measure-Object -Property Time -Sum).Sum
+		$xml.testsuite.time = [TimeSpan]::FromMilliseconds($totalTime).ToString("c")
+		$xml.testsuite.failures = ($Results | Where-Object {$_.Status -eq "FAILED"} | Measure-Object).Count.ToString()
+
+		# populate test-level attributes
+		foreach($result in $Results) 
+		{   
+		    $newTestCase = $newTestCaseTemplate.clone()
+		    $newTestCase.classname = $TestSuiteName
+		    $newTestCase.name = $result.Name.ToString()
+		    $newTestCase.time = [TimeSpan]::FromMilliseconds($result.Time).ToString("c")
+		    if($result.Status -eq "PASSED")
+		    {   #Remove the failure node, since this is a success
+		        $newTestCase.RemoveChild($newTestCase.ChildNodes[0]) | Out-Null
+		    }
+		    else
+		    {
+				$newTestCase.failure.type = "hqTestLite"
+				#$newTestCase.failure.InnerText = Format-ErrorRecord $result.Reason
+		        $newTestCase.failure.message = "message is TODO" 
+		    }
+		    $xml.testsuite.AppendChild($newTestCase) > $null
+		}   
+
+		# remove test case template
+		$xml.testsuite.testcase | Where-Object { $_.Name -eq "" } | ForEach-Object  { [void]$xml.testsuite.RemoveChild($_) }
+
+		# save xml to file
+		$path = "$($ReportFolder)\$($TestSuiteName).xml"
+		$xml.Save($path)
+	}
 }

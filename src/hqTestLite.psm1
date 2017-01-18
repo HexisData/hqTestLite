@@ -295,6 +295,7 @@ function Publish-Results {
 		[string]$ReportFolder = $Global:DefaultReportFolder,
 		[Parameter(Mandatory = $True)]
 		[string]$TestSuiteName,
+		[Parameter(Mandatory = $True)]
 		[Object[]]$Results,
 		[ValidateSet("JUnit")]
 		[string]$ReportFormat = "JUnit"
@@ -348,5 +349,7 @@ function Publish-Results {
 		# save xml to file
 		$path = "$($ReportFolder)\$($TestSuiteName).xml"
 		$xml.Save($path)
+
+		return $path
 	}
 }

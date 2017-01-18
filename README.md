@@ -32,15 +32,22 @@ A typical test script will look something like this (see [SampleTest.ps1](./exam
 
 For test automation and continuous integration scenarios, the *Publish-Results* will publish the test results in a standard test reporting format. Currently JUnit is the only supported format. For an example of *Publish-Results*, see [ReportTestResults.ps1](./example/ReportTestResults).
 
+
+### QuickStart
+
+#### Locate the hqTestLite module in a central repository to make it easy to upgrade.
+
+`Import-Module "\\netshare\hqTestLite.psm1" -Force`
+
+#### Override global defaults with values specific to the test environment.
+
+`Invoke-Expression "\\netshare\Test\config.ps1"`
+
+#### Run this
+
+Example below using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath. Leaving out directory params assuming SQL scripts are co-located with the test script. 
+
 ```powershell
-# Locate the hqTestLite module in a central repository to make it easy to upgrade.
-Import-Module "\\netshare\hqTestLite.psm1" -Force
-
-# Override global defaults with values specific to the test environment.
-Invoke-Expression "\\netshare\Test\config.ps1"
-
-# Using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath.
-# Leaving out directory params assuming SQL scripts are co-located with the test script. 
 Test-MedmSolution `
     -SetupSqlFiles "MySolution_Setup.sql" `
     -SolutionName "MySolution" `

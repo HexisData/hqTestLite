@@ -236,9 +236,9 @@ function Test-MedmComponent {
 			Time = $stopWatch.Elapsed.TotalMilliseconds
 			Name = $TestName
 		}
-		#if ($result.Status -eq "FAILED") {
-		#	$result.Reason
-		#}
+		if ($result.Status -eq "FAILED") {
+			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "\r\n"
+		}
 		return New-Object PSObject -Property $result
 	}
 }
@@ -250,36 +250,22 @@ function Test-MedmSolution {
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
-
         [string]$DbServer = $Global:DefaultMedmDbServer,
-
         [string]$DbName = $Global:DefaultMedmDbName,
-
         [string]$SetupSqlDir = $null,
-
         [string]$SetupSqlFiles = $null,
-
         [Parameter(Mandatory = $True)]
         [string]$SolutionName,
-
         [string]$SolutionParams = $null,
-
         [string]$ResultSqlDir,
-
         #[Parameter(Mandatory = $True)]
         [string]$ResultSqlFiles,
-
         [string]$CleanupSqlDir = $null,
-
         [string]$CleanupSqlFiles = $null,
-
         [Parameter(Mandatory = $True)]
         [string]$TestResultPath,
-
         [string]$CertifiedResultPath = $null,
-
         [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
-
 		[switch]$OutputTable,
 		[switch]$SuppressDiffToolPopup
     )
@@ -349,9 +335,9 @@ function Publish-Results {
 		    }
 		    else
 		    {
-				$newTestCase.failure.type = "hqTestLite"
+				$newTestCase.failure.type = "hqTestLite.Fail"
 				#$newTestCase.failure.InnerText = Format-ErrorRecord $result.Reason
-		        $newTestCase.failure.message = "message is TODO" 
+		        $newTestCase.failure.message = $result.Reason 
 		    }
 		    $xml.testsuite.AppendChild($newTestCase) > $null
 		}   

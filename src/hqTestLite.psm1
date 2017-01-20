@@ -267,7 +267,8 @@ function Test-MedmSolution {
         [string]$CertifiedResultPath = $null,
         [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 		[switch]$OutputTable,
-		[switch]$SuppressDiffToolPopup
+		[switch]$SuppressDiffToolPopup,
+		[string]$TestName
     )
 
 	Test-MedmComponent `
@@ -287,7 +288,8 @@ function Test-MedmSolution {
 		-CertifiedResultPath $CertifiedResultPath `
 		-BeyondComparePath $BeyondComparePath `
 		-OutputTable:$OutputTable.IsPresent `
-		-SuppressDiffToolPopup:$SuppressDiffToolPopup.IsPresent
+		-SuppressDiffToolPopup:$SuppressDiffToolPopup.IsPresent `
+		-TestName $TestName
 }
 
 function Publish-Results {

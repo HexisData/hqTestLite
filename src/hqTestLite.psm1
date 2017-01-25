@@ -237,7 +237,7 @@ function Test-MedmComponent {
 			Name = $TestName
 		}
 		if ($result.Status -eq "FAILED") {
-			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "\r\n"
+			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
 		}
 		return New-Object PSObject -Property $result
 	}

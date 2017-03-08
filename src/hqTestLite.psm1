@@ -350,6 +350,13 @@ function Publish-Results {
 
 		# save xml to file
 		$path = "$($ReportFolder)\$($TestSuiteName).xml"
+		$originalPath = $path
+		$i = 0;
+		while (Test-Path $path) {
+			$i++
+			$extension = $originalPath.Split(".")[-1];
+			$path = $originalPath.Replace(".$($extension)", "_$($i).$($extension)") # don't overwrite any earlier files that were part of the same Test Suite; instead make it Filename_1.xml, Filename_2.xml, etc
+		}
 		$xml.Save($path)
 
 		return $path

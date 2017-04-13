@@ -17,7 +17,8 @@ A PowerShell version of hqTest. Currently only supports testing of Markit EDM So
 
 ## Usage
 
-In this version of hqTest, a test is expressed as a short PowerShell script that invokes the *Test-MedmSolution* cmdlet. This cmdlet performs the following tasks:
+### Test-MedmComponent and Test-MedmSolution
+In this free, open source edition of hqTest, a test is expressed as a short PowerShell script that invokes the *Test-MedmSolution* or *Test-MedmComponent* cmdlet. This cmdlet performs the following tasks:
 
 1. Optionally executes one or more SQL setup scripts against the target DB. Normally this step will be used to stage test data in cases where the process under test is consuming data in DB tables instead of a file.
 1. Executes the target MEDM Solution with specified parameters.
@@ -25,17 +26,28 @@ In this version of hqTest, a test is expressed as a short PowerShell script that
 1. Optionally executes one or more cleanup scripts, normally intended to restore the database to its pre-test state.
 1. Optionally launches BeyondCompare to display the difference between the current test result file and some designated, previously certified test result file.
 
-A typical test script will look something like this (see [SampleTest.ps1](./hqTestLite/SampleTest.ps1)):
+A typical test script will look something like this (see [SampleTest.ps1](./example/SampleTest.ps1)):
+
+### Publish-Results
+
+For test automation and continuous integration scenarios, the *Publish-Results* will publish the test results in a standard test reporting format. Currently JUnit is the only supported format. For an example of *Publish-Results*, see [ReportTestResults.ps1](./example/ReportTestResults).
+
+
+### QuickStart
+
+#### Locate the hqTestLite module in a central repository to make it easy to upgrade.
+
+`Import-Module "\\netshare\hqTestLite.psm1" -Force`
+
+#### Override global defaults with values specific to the test environment.
+
+`Invoke-Expression "\\netshare\Test\config.ps1"`
+
+#### Run this
+
+Example below using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath. Leaving out directory params assuming SQL scripts are co-located with the test script. 
 
 ```powershell
-# Locate the hqTestLite module in a central repository to make it easy to upgrade.
-Import-Module "\\netshare\hqTestLite.psm1" -Force
-
-# Override global defaults with values specific to the test environment.
-Invoke-Expression "\\netshare\Test\config.ps1"
-
-# Using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath.
-# Leaving out directory params assuming SQL scripts are co-located with the test script. 
 Test-MedmSolution `
     -SetupSqlFiles "MySolution_Setup.sql" `
     -SolutionName "MySolution" `
@@ -62,6 +74,8 @@ The following global variables may be overridden:
 
 **$Global:DefaultSqlScriptType** &ndash; The default script type token to use when *-Verbose* or *-WhatIf* are activated. Useful for troubleshooting.
 
+**$Global:DefaultReportFolder** &ndash; The default location where *Publish-Results* will place test results reports
+
 See [config.ps1](./hqTestLite/config.ps1) for a typical example of an environment configuration script.
 
 ## Cmdlets
@@ -70,7 +84,12 @@ See [config.ps1](./hqTestLite/config.ps1) for a typical example of an environmen
 
 **Invoke-MedmSolution** &ndash; Executes a Markit EDM Solution. Optionally executes a set of SQL setup scripts prior to Solution execution and a set of cleanup scripts after Solution execution.
 
-**Test-MedmSolution** &ndash; Tests a Markit EDM Solution by optionally running setup scripts, executing the Solution, running a set of result scripts and sending their output to a file, optionally running cleanup scripts, and then invoking BeyondCompare to display the dfference between the actual test result file and a previously staged certified result file.
+**Test-MedmComponent** &ndash; Tests a Markit EDM Component (DataPorter, DataInspector, DataMatcherProcess, DataConstructor, or Solution) by optionally running setup scripts, executing the Component, optionally running a query and sending its output to a file, optionally running cleanup scripts, performing a diff, and optionally invoking BeyondCompare to display the difference between the actual test result file and previously certified result file.
+
+**Test-MedmSolution** &ndash; A shortcut to *Test-MedmComponent* to run a Markit EDM Solution
+
+**Publish-Results** &ndash; Produces a file containing the results of executed tests in standard test reporting formats. Currently supports JUnit.
+
 
 ### Invoke-SqlScripts
 
@@ -105,26 +124,25 @@ Invoke-SqlScripts `
 
 **-OutputTable** &ndash; Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. Ex: `-OutputTable` 
 
-### Invoke-MedmSolution
+### Invoke-MedmComponent
 
-Executes a Markit EDM Solution. Optionally executes a set of SQL setup scripts prior to Solution execution and a set of cleanup scripts after Solution execution.
+Executes a Markit EDM Component. Optionally executes a set of SQL setup scripts prior to Component execution, and a set of cleanup scripts after Component execution.
 
 #### Syntax
 
 ```
-Invoke-MedmSolution `
+Invoke-MedmComponent `
     [-ProcessAgentPath <string>] `
     [-DbServer <string>] `
     [-DbName <string>] `
     [-SetupSqlDir <string>] `
     [-SetupSqlFiles <string>] `
-    -SolutionName <string> `
-    [-SolutionParams <string>] `
+    -ComponentName <string>] `
+    -ComponentType <string>] `
+    [-ConfigurableParams <string>] `
     [-CleanupSqlDir <string>] `
-    [-CleanupSqlFiles <string>]
+    [-CleanupSqlFiles <string>] `
 ```
-
-#### Parameters
 
 **-ProcessAgentPath** &ndash; Optional. Path to *CADISProcessAgent.exe* for target MEDM version. Defaults to the value of *$Global:DefaultMedmProcessAgentPath*. Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CADISProcessAgent.exe"`
 
@@ -136,17 +154,27 @@ Invoke-MedmSolution `
 
 **-SetupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated with *-SetupSqlDir*. Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"`
 
-**-SolutionName** &ndash; Required. The name of the MEDM Solution to be executed. Ex: `-SolutionName "My Solution"`
+**-ComponentName** &ndash; Required. The name of the MEDM Solution to be executed. Ex: `-SolutionName "My Solution"`
 
-**-SolutionParams** &ndash; Optional. A delimited list of Solution parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". Ex: `-SolutionParams "param1=value1:param2=value2"`
+**-ComponentType** &ndash; Required. Supports "DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution"
+
+**-ConfigurableParams** &ndash; Optional. A delimited list of Solution parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". Ex: `-SolutionParams "param1=value1:param2=value2"`
 
 **-CleanupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyCleanupSqlDir"`
 
 **-CleanupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed following Solution invocation. All must be located within the directory indicated with *-CleanupSqlDir*. Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"`
 
-### Test-MedmSolution
 
-Tests a Markit EDM Solution by optionally running setup scripts, executing the Solution, running a set of result scripts and sending their output to a file, optionally running cleanup scripts, and then invoking BeyondCompare to display the dfference between the actual test result file and a previously staged certified result file.
+### Invoke-MedmSolution
+
+A wrapper around `Invoke-MedmComponent`. Passes values through to and hard-codes `-ComponentType Solution`
+
+
+### Test-MedmComponent
+
+Tests a Markit EDM Component by optionally running setup scripts, executing the Component, running a set of result scripts and sending their output to a file, optionally running cleanup scripts, performing a diff, and then optionally BeyondCompare to display the dfference between the actual test result file and a previously staged certified result file.
+
+Returns a test result object.
 
 #### Syntax
 
@@ -157,16 +185,19 @@ Test-MedmSolution `
     [-DbName <string>] `
     [-SetupSqlDir <string>] `
     [-SetupSqlFiles <string>] `
-    -SolutionName <string> `
-    [-SolutionParams <string>] `
+    -ComponentName <string> `
+    -ComponentType <string> `
+    [-ConfigurableParams <string>] `
     [-ResultSqlDir <string>] `
-    -ResultSqlFiles <string>
+    [-ResultSqlFiles <string>] `
     [-CleanupSqlDir <string>] `
     [-CleanupSqlFiles <string>] `
-    -TestResultPath <string> `
+    [-TestResultPath <string>] `
     [-CertifiedResultPath <string>] `
     [-BeyondComparePath <string>] `
-    [-OutputTable]
+    [-OutputTable] `
+    [-SuppressDiffToolPopup] `
+    [-TestName <string>]
 ```
 
 #### Parameters
@@ -181,13 +212,15 @@ Test-MedmSolution `
 
 **-SetupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated with *-SetupSqlDir*. Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"`
 
-**-SolutionName** &ndash; Required. The name of the MEDM Solution to be executed. Ex: `-SolutionName "My Solution"`
+**-ComponentName** &ndash; Required. The name of the MEDM Component to be executed. Ex: `-ComponentName "My Component"`
 
-**-SolutionParams** &ndash; Optional. A delimited list of Solution parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". Ex: `-SolutionParams "param1=value1:param2=value2"`
+**-ComponentType** &ndash; Required. Supports "DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution"
+
+**-ConfigurableParams** &ndash; Optional. A delimited list of Configurable Parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". Ex: `-ConfigurableParams "param1=value1:param2=value2"`
 
 **-ResultSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation to extract test results. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyResultSqlDir"`
 
-**-ResultSqlFiles** &ndash; Required. A comma-delimited list of SQL script files to be executed following Solution invocation to extract test results. All must be located within the directory indicated with *-ResultSqlDir*. Ex: `-ResultSqlFiles "MyResultSqlFile1.sql,MyResultSqlFile2.sql"`
+**-ResultSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed following Solution invocation to extract test results. All must be located within the directory indicated with *-ResultSqlDir*. Ex: `-ResultSqlFiles "MyResultSqlFile1.sql,MyResultSqlFile2.sql"`. If omitted, you are assuming that the Markit EDM Component that is under test will produce a file to validate as part of this test.
 
 **-CleanupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation and test result extraction. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyCleanupSqlDir"`
 
@@ -200,3 +233,47 @@ Test-MedmSolution `
 **-BeyondComparePath** &ndash; Optional. Path to the BeyondCompare executable. Relative paths will be resolved relative to the current directory. Defaults to the value of *$Global:DefaultBeyondComparePath*. Ex: `-BeyondComparePath "C:\Program Files\Beyond Compare 4\BCompare.exe"`
 
 **-OutputTable** &ndash; Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. Ex: `-OutputTable` 
+
+**-SuppressDiffToolPopup** &ndash; Switch. If present, causes the cmdlet to skip the BeyondCompare popup. A diff is still performed, with results included in the return object. This switch is useful for test automation or continuous integration scenarios.
+
+**-TestName** &ndash; Optional. If present, is included in the `Name` property of the return object.
+
+#### Returns
+
+An object with the following properties:
+
+* Name &ndash; Contains the value passed in the `-TestName` argument
+* Status &ndash; `PASSED` or `FAILED`
+* Time &ndash; The execution time of the Markit EDM Component being tested
+* Reason &ndash; if Status is `FAILED`, Reason will contain the diff results showing where the test result file is different from the certified file.
+
+### Test-MedmSolution
+
+A wrapper around `Test-MedmComponent`. Passes values through to and hard-codes `-ComponentType Solution`
+
+### Publish-Results
+
+Produces a report showing pass/fail status of tests in a standard test results reporting format. Currently supports JUnit.
+
+#### Syntax
+```
+Publish-Results `
+    [-ReportFolder <string>] `
+    -TestSuiteName <string> `
+    -Results <Object[]> `
+    [-ReportFormat <string>]
+```
+
+#### Parameters
+
+**-ReportFolder** &ndash; Optional. Points to the folder that should contain the generated report. If ommitted, defaults to `$Global:DefaultReportFolder`
+
+**-TestSuiteName** &ndash; Required. The name of the test suite. Can be whatever string value you choose.
+
+**-Results** &ndash; Required. An array containing test results objects returned from calls to `Test-MedmComponent` or `Test-MedmSolution`. See [ReportTestResult.ps1](./example/ReportTestResult.ps1)
+
+**-ReportFormat** &ndash; Optional. The desired report format. Defaults to "JUnit". 
+
+#### Returns
+
+A string value containing the path to the report file.

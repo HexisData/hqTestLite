@@ -28,6 +28,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="DB\" />
+    <Folder Include="Test\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="config.ps1" />
@@ -36,7 +37,9 @@
     <Compile Include="DB\hq.usp_Core_DumpData.sql" />
     <Compile Include="hqTestLite.psd1" />
     <Compile Include="hqTestLite.psm1" />
-    <Compile Include="SampleTest.ps1" />
+    <Compile Include="Test\CISupport.tests.ps1" />
+    <Compile Include="Test\Pester.psd1" />
+    <Compile Include="Test\Pester.psm1" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="Build" />

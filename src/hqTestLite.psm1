@@ -3,6 +3,7 @@ $Global:DefaultMedmDbServer = "MyMedmDbServer"
 $Global:DefaultMedmDbName = "MyMedmDb"
 $Global:DefaultBeyondComparePath = "C:\Program Files\Beyond Compare 4\BCompare.exe"
 $Global:DefaultSqlScriptType = "Sql Script"
+$Global:DefaultReportFolder = "C:\tmp"
 
 function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
@@ -158,42 +159,30 @@ function Test-MedmComponent {
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
-
-        [string]$DbServer = $Global:DefaultMedmDbServer,
-
-        [string]$DbName = $Global:DefaultMedmDbName,
-
-        [string]$SetupSqlDir = $null,
-
-        [string]$SetupSqlFiles = $null,
-
-        [Parameter(Mandatory = $True)]
+		[string]$DbServer = $Global:DefaultMedmDbServer,
+		[string]$DbName = $Global:DefaultMedmDbName,
+		[string]$SetupSqlDir = $null,
+		[string]$SetupSqlFiles = $null,
+		[Parameter(Mandatory = $True)]
         [string]$ComponentName,
-
 		[Parameter(Mandatory = $True)]
 		[ValidateSet("DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution")]
 		[string]$ComponentType,
-
-        [string]$ConfigurableParams = $null,
-
-        [string]$ResultSqlDir,
-
-        #[Parameter(Mandatory = $True)]
+		[string]$ConfigurableParams = $null,
+		[string]$ResultSqlDir,
+		#[Parameter(Mandatory = $True)]
         [string]$ResultSqlFiles,
-
-        [string]$CleanupSqlDir = $null,
-
-        [string]$CleanupSqlFiles = $null,
-
-        [Parameter(Mandatory = $True)]
+		[string]$CleanupSqlDir = $null,
+		[string]$CleanupSqlFiles = $null,
+		[Parameter(Mandatory = $True)]
         [string]$TestResultPath,
-
-        [string]$CertifiedResultPath = $null,
-
-        [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
-
-		[switch]$OutputTable
+		[string]$CertifiedResultPath = $null,
+		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
+		[switch]$OutputTable,
+		[switch]$SuppressDiffToolPopup,
+		[string]$TestName
     )
+	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
 
     # Invoke setup scripts and MEDM component.
     Invoke-MedmComponent `
@@ -204,7 +193,8 @@ function Test-MedmComponent {
         -ComponentName $ComponentName `
         -ConfigurableParams $ConfigurableParams `
         -SetupSqlDir $SetupSqlDir `
-        -SetupSqlFiles $SetupSqlFiles 
+        -SetupSqlFiles $SetupSqlFiles `
+	| Write-Host
 
     # Invoke result scripts.
 	if ($ResultSqlFiles) {
@@ -228,13 +218,29 @@ function Test-MedmComponent {
             -ScriptType "Cleanup Script"
     }
 
-    if ($CertifiedResultPath) {
+	$stopWatch.Stop()
+
+    if (-not($SuppressDiffToolPopup.IsPresent) -and $CertifiedResultPath) {
         $params = "`"$($TestResultPath)`" `"$($CertifiedResultPath)`" /readonly"
 
         "Displaying difference between actual & certified results." | Write-Verbose  
         if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
         else {"`"$($BeyondComparePath)`" $($params)" | Out-Host}
     }
+
+	# get diff to produce test results
+	if ($CertifiedResultPath) {
+		$diff = Compare-Object (Get-Content $CertifiedResultPath) (Get-Content $TestResultPath)
+		$result = @{
+			Status = %{if (0 -eq $diff.Count) {"PASSED"} else {"FAILED"}}
+			Time = $stopWatch.Elapsed.TotalMilliseconds
+			Name = $TestName
+		}
+		if ($result.Status -eq "FAILED") {
+			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
+		}
+		return New-Object PSObject -Property $result
+	}
 }
 
 
@@ -244,37 +250,25 @@ function Test-MedmSolution {
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
-
         [string]$DbServer = $Global:DefaultMedmDbServer,
-
         [string]$DbName = $Global:DefaultMedmDbName,
-
         [string]$SetupSqlDir = $null,
-
         [string]$SetupSqlFiles = $null,
-
         [Parameter(Mandatory = $True)]
         [string]$SolutionName,
-
         [string]$SolutionParams = $null,
-
         [string]$ResultSqlDir,
-
         #[Parameter(Mandatory = $True)]
         [string]$ResultSqlFiles,
-
         [string]$CleanupSqlDir = $null,
-
         [string]$CleanupSqlFiles = $null,
-
         [Parameter(Mandatory = $True)]
         [string]$TestResultPath,
-
         [string]$CertifiedResultPath = $null,
-
         [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
-
-		[switch]$OutputTable
+		[switch]$OutputTable,
+		[switch]$SuppressDiffToolPopup,
+		[string]$TestName
     )
 
 	Test-MedmComponent `
@@ -293,5 +287,78 @@ function Test-MedmSolution {
 		-TestResultPath $TestResultPath `
 		-CertifiedResultPath $CertifiedResultPath `
 		-BeyondComparePath $BeyondComparePath `
-		-OutputTable:$OutputTable.IsPresent
+		-OutputTable:$OutputTable.IsPresent `
+		-SuppressDiffToolPopup:$SuppressDiffToolPopup.IsPresent `
+		-TestName $TestName
+}
+
+function Publish-Results {
+	Param(
+		[string]$ReportFolder = $Global:DefaultReportFolder,
+		[Parameter(Mandatory = $True)]
+		[string]$TestSuiteName,
+		[Parameter(Mandatory = $True)]
+		[Object[]]$Results,
+		[ValidateSet("JUnit")]
+		[string]$ReportFormat = "JUnit"
+	)
+
+	if ($ReportFormat -eq "JUnit") {
+		$template = @'
+<testsuite name="" tests="" failures="" timestamp="" time="" package="hqTestLite">
+<testcase classname="" name="" time="">
+    <failure type="" message=""/>
+</testcase>
+</testsuite>
+'@
+
+		# load XML template 
+		$xml = New-Object xml		
+		$xml.LoadXml($template)
+		$newTestCaseTemplate = (@($xml.testsuite.testcase)[0]).Clone()  
+
+		# populate suite-level attributes
+		$xml.testsuite.name = $TestSuiteName
+		$xml.testsuite.tests = $Results.Count.ToString()
+		$xml.testsuite.timestamp = (Get-Date -Format u).ToString()
+		$totalTime = ($Results | Measure-Object -Property Time -Sum).Sum
+		$xml.testsuite.time = [TimeSpan]::FromMilliseconds($totalTime).ToString("c")
+		$xml.testsuite.failures = ($Results | Where-Object {$_.Status -eq "FAILED"} | Measure-Object).Count.ToString()
+
+		# populate test-level attributes
+		foreach($result in $Results) 
+		{   
+		    $newTestCase = $newTestCaseTemplate.clone()
+		    $newTestCase.classname = $TestSuiteName
+		    $newTestCase.name = $result.Name.ToString()
+		    $newTestCase.time = [TimeSpan]::FromMilliseconds($result.Time).ToString("c")
+		    if($result.Status -eq "PASSED")
+		    {   #Remove the failure node, since this is a success
+		        $newTestCase.RemoveChild($newTestCase.ChildNodes[0]) | Out-Null
+		    }
+		    else
+		    {
+				$newTestCase.failure.type = "hqTestLite.Fail"
+				#$newTestCase.failure.InnerText = Format-ErrorRecord $result.Reason
+		        $newTestCase.failure.message = $result.Reason 
+		    }
+		    $xml.testsuite.AppendChild($newTestCase) > $null
+		}   
+
+		# remove test case template
+		$xml.testsuite.testcase | Where-Object { $_.Name -eq "" } | ForEach-Object  { [void]$xml.testsuite.RemoveChild($_) }
+
+		# save xml to file
+		$path = "$($ReportFolder)\$($TestSuiteName).xml"
+		$originalPath = $path
+		$i = 0;
+		while (Test-Path $path) {
+			$i++
+			$extension = $originalPath.Split(".")[-1];
+			$path = $originalPath.Replace(".$($extension)", "_$($i).$($extension)") # don't overwrite any earlier files that were part of the same Test Suite; instead make it Filename_1.xml, Filename_2.xml, etc
+		}
+		$xml.Save($path)
+
+		return $path
+	}
 }

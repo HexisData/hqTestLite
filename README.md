@@ -26,11 +26,11 @@ In this free, open source edition of hqTest, a test is expressed as a short Powe
 1. Optionally executes one or more cleanup scripts, normally intended to restore the database to its pre-test state.
 1. Optionally launches BeyondCompare to display the difference between the current test result file and some designated, previously certified test result file.
 
-A typical test script will look something like this (see [SampleTest.ps1](/example/SampleTest.ps1)):
+A typical test script will look something like this (see [SampleTest.ps1](example/SampleTest.ps1)):
 
 ### Publish-Results
 
-For test automation and continuous integration scenarios, the *Publish-Results* will publish the test results in a standard test reporting format. Currently JUnit is the only supported format. For an example of *Publish-Results*, see [ReportTestResults.ps1](./example/ReportTestResults).
+For test automation and continuous integration scenarios, the *Publish-Results* will publish the test results in a standard test reporting format. Currently JUnit is the only supported format. For an example of *Publish-Results*, see [ReportTestResults.ps1](example/ReportTestResults).
 
 
 ### QuickStart
@@ -60,7 +60,7 @@ Test-MedmSolution `
 
 ## Global Defaults
 
-The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, many of these values should be overridden on a per-environment basis as illustrated in [SampleTest.ps1](./hqTestLite/SampleTest.ps1). 
+The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, many of these values should be overridden on a per-environment basis as illustrated in [SampleTest.ps1](example/SampleTest.ps1). 
 
 The following global variables may be overridden:
 
@@ -76,7 +76,7 @@ The following global variables may be overridden:
 
 **$Global:DefaultReportFolder** &ndash; The default location where *Publish-Results* will place test results reports
 
-See [config.ps1](./hqTestLite/config.ps1) for a typical example of an environment configuration script.
+See [config.ps1](config.ps1) for a typical example of an environment configuration script.
 
 ## Cmdlets
 

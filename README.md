@@ -270,7 +270,7 @@ Publish-Results `
 
 **-TestSuiteName** &ndash; Required. The name of the test suite. Can be whatever string value you choose.
 
-**-Results** &ndash; Required. An array containing test results objects returned from calls to `Test-MedmComponent` or `Test-MedmSolution`. See [ReportTestResult.ps1](example/ReportTestResult.ps1)
+**-Results** &ndash; Required. An array containing test results objects returned from calls to `Test-MedmComponent` or `Test-MedmSolution`. See [ReportTestResult.ps1](example/ReportTestResults.ps1)
 
 **-ReportFormat** &ndash; Optional. The desired report format. Defaults to "JUnit". 
 

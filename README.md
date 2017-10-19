@@ -30,7 +30,7 @@ A typical test script will look something like this (see [SampleTest.ps1](exampl
 
 ### Publish-Results
 
-For test automation and continuous integration scenarios, the *Publish-Results* will publish the test results in a standard test reporting format. Currently JUnit is the only supported format. For an example of *Publish-Results*, see [ReportTestResults.ps1](example/ReportTestResults).
+For test automation and continuous integration scenarios, the *Publish-Results* will publish the test results in a standard test reporting format. Currently JUnit is the only supported format. For an example of *Publish-Results*, see [ReportTestResults.ps1](example/ReportTestResults.ps1).
 
 
 ### QuickStart

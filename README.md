@@ -76,7 +76,7 @@ The following global variables may be overridden:
 
 **$Global:DefaultReportFolder** &ndash; The default location where *Publish-Results* will place test results reports
 
-See [config.ps1](config.ps1) for a typical example of an environment configuration script.
+See [config.ps1](src/config.ps1) for a typical example of an environment configuration script.
 
 ## Cmdlets
 
@@ -270,7 +270,7 @@ Publish-Results `
 
 **-TestSuiteName** &ndash; Required. The name of the test suite. Can be whatever string value you choose.
 
-**-Results** &ndash; Required. An array containing test results objects returned from calls to `Test-MedmComponent` or `Test-MedmSolution`. See [ReportTestResult.ps1](./example/ReportTestResult.ps1)
+**-Results** &ndash; Required. An array containing test results objects returned from calls to `Test-MedmComponent` or `Test-MedmSolution`. See [ReportTestResult.ps1](example/ReportTestResult.ps1)
 
 **-ReportFormat** &ndash; Optional. The desired report format. Defaults to "JUnit". 
 

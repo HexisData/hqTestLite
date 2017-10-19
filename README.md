@@ -9,7 +9,7 @@ A PowerShell version of hqTest. Currently only supports testing of Markit EDM So
 
 **SampleTest.ps1** &ndash; Sample test script.
 
-**DB/hq.tvf_Core_Sequence** &ndash; Utility UDF that generates a sequence of integers in a rowset.
+**DB/hq.tvf_Core_Rows** &ndash; Utility UDF that generates a sequence of integers in a rowset.
 
 **DB/hq.tvf_Core_Split_Delimiter** &ndash; Utility UDF that splits a delimited list into a rowset.
 

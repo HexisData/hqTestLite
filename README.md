@@ -26,7 +26,7 @@ In this free, open source edition of hqTest, a test is expressed as a short Powe
 1. Optionally executes one or more cleanup scripts, normally intended to restore the database to its pre-test state.
 1. Optionally launches BeyondCompare to display the difference between the current test result file and some designated, previously certified test result file.
 
-A typical test script will look something like this (see [SampleTest.ps1](./example/SampleTest.ps1)):
+A typical test script will look something like this (see [SampleTest.ps1](/example/SampleTest.ps1)):
 
 ### Publish-Results
 

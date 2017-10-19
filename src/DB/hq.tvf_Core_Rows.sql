@@ -2,7 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE FUNCTION [hq].[tvf_Core_Sequence] 
+CREATE FUNCTION [hq].[tvf_Core_Rows] 
 (	
 	@n int
 )

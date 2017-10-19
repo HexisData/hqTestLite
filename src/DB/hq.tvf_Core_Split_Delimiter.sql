@@ -14,7 +14,7 @@ RETURN
 (
 	WITH Start(i) AS (
 		SELECT S.i + CASE S.i WHEN 1 THEN 0 ELSE DATALENGTH(@Delimiter) / 2 END 
-		FROM hq.tvf_Core_Sequence(DATALENGTH(@String) / 2) S
+		FROM hq.tvf_Core_Rows(DATALENGTH(@String) / 2) S
 		WHERE 
 			S.i = 1
 			OR (

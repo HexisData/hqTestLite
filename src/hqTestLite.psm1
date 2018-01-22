@@ -1,9 +1,9 @@
-$Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CadisProcessAgent.exe"
-$Global:DefaultMedmDbServer = "MyMedmDbServer"
-$Global:DefaultMedmDbName = "MyMedmDb"
-$Global:DefaultBeyondComparePath = "C:\Program Files\Beyond Compare 4\BCompare.exe"
+$Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_10_2_4_1\CadisProcessAgent.exe"
+$Global:DefaultMedmDbServer = "sqlesmdev"
+$Global:DefaultMedmDbName = "Cadis"
+$Global:DefaultBeyondComparePath = ""
 $Global:DefaultSqlScriptType = "Sql Script"
-$Global:DefaultReportFolder = "C:\tmp"
+$Global:DefaultReportFolder = "C:\HqTest\Results"
 
 function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
@@ -219,9 +219,30 @@ function Test-MedmComponent {
     }
 
 	$stopWatch.Stop()
+	
+	$result = Confirm-File `
+		-FilePath $TestResultPath `
+		-CertifiedFilePath $CertifiedResultPath `
+		-SuppressDiffToolPopup:$SuppressDiffToolPopup `
+		-TestName $TestName `
+		-BeyondComparePath $BeyondComparePath
 
-    if (-not($SuppressDiffToolPopup.IsPresent) -and $CertifiedResultPath) {
-        $params = "`"$($TestResultPath)`" `"$($CertifiedResultPath)`" /readonly"
+	return $result
+}
+
+
+function Confirm-File {
+    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+	Param(
+		[string][Parameter(Mandatory = $True)] $FilePath,
+		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
+		[switch]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
+		[string]$TestName,
+		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath
+	)
+
+	if (-not($SuppressDiffToolPopup.IsPresent) -and $CertifiedFilePath) {
+        $params = "`"$($FilePath)`" `"$($CertifiedFilePath)`" /readonly"
 
         "Displaying difference between actual & certified results." | Write-Verbose  
         if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
@@ -229,11 +250,11 @@ function Test-MedmComponent {
     }
 
 	# get diff to produce test results
-	if ($CertifiedResultPath) {
-		$diff = Compare-Object (Get-Content $CertifiedResultPath) (Get-Content $TestResultPath)
+	if ($CertifiedFilePath) {
+		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
 		$result = @{
 			Status = %{if (0 -eq $diff.Count) {"PASSED"} else {"FAILED"}}
-			Time = $stopWatch.Elapsed.TotalMilliseconds
+			# Time = $stopWatch.Elapsed.TotalMilliseconds
 			Name = $TestName
 		}
 		if ($result.Status -eq "FAILED") {
@@ -241,6 +262,7 @@ function Test-MedmComponent {
 		}
 		return New-Object PSObject -Property $result
 	}
+
 }
 
 
@@ -267,7 +289,7 @@ function Test-MedmSolution {
         [string]$CertifiedResultPath = $null,
         [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 		[switch]$OutputTable,
-		[switch]$SuppressDiffToolPopup,
+		[switch]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
 		[string]$TestName
     )
 

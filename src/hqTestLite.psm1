@@ -1,6 +1,6 @@
 $Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_10_2_4_1\CadisProcessAgent.exe"
-$Global:DefaultMedmDbServer = "sqlesmdev"
-$Global:DefaultMedmDbName = "Cadis"
+$Global:DefaultMedmDbServer = "MyDbServer"
+$Global:DefaultMedmDbName = "MyDbName"
 $Global:DefaultBeyondComparePath = ""
 $Global:DefaultSqlScriptType = "Sql Script"
 $Global:DefaultReportFolder = "C:\HqTest\Results"

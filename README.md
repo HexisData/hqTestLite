@@ -169,6 +169,10 @@ Invoke-MedmComponent `
 
 A wrapper around `Invoke-MedmComponent`. Passes values through to and hard-codes `-ComponentType Solution`
 
+### Confirm-File
+Performs file validation. Pops up the diff tool on completion, and writes out test results in JUnit format. Confirm-File is useful in the case where you have multiple files output by the process under test. You can call Invoke-MedmComponent and then call Confirm-File multiple times (once per file output from the process). 
+
+Internally, Test-MedmComponent and Test-MedmSolution call Confirm-File to validate the test results with a certified file. 
 
 ### Test-MedmComponent
 

@@ -6,7 +6,7 @@ $Global:DefaultSqlScriptType = "Sql Script"
 $Global:DefaultReportFolder = "C:\HqTest\Results"
 
 function Invoke-SqlScripts {
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
         [Parameter(Mandatory = $True)]
@@ -39,7 +39,7 @@ function Invoke-SqlScripts {
             $SqlPath = Join-Path -Path $SqlDir -ChildPath $_
             if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
                 if ($OutputPath) { 
-                    "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
+                    "========== $($_) ==========" | Out-File -FilePath $(Split-Path $OutputPath -Leaf) -Append 
 					if ($OutputTable) {
 						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -AutoSize -Wrap | Out-File -FilePath $OutputPath -Append
 					}
@@ -59,7 +59,7 @@ function Invoke-SqlScripts {
 
 function Invoke-MedmSolution {
 
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
@@ -155,7 +155,7 @@ function Invoke-MedmComponent {
 
 function Test-MedmComponent {
 
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
@@ -179,7 +179,7 @@ function Test-MedmComponent {
 		[string]$CertifiedResultPath = $null,
 		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 		[switch]$OutputTable,
-		[switch]$SuppressDiffToolPopup,
+		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
 		[string]$TestName
     )
 	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
@@ -223,7 +223,7 @@ function Test-MedmComponent {
 	$result = Confirm-File `
 		-FilePath $TestResultPath `
 		-CertifiedFilePath $CertifiedResultPath `
-		-SuppressDiffToolPopup:$SuppressDiffToolPopup `
+		-SuppressDiffToolPopup $SuppressDiffToolPopup `
 		-TestName $TestName `
 		-BeyondComparePath $BeyondComparePath
 
@@ -232,16 +232,16 @@ function Test-MedmComponent {
 
 
 function Confirm-File {
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 	Param(
 		[string][Parameter(Mandatory = $True)] $FilePath,
 		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
-		[switch]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
+		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
 		[string]$TestName,
 		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath
 	)
 
-	if (-not($SuppressDiffToolPopup.IsPresent) -and $CertifiedFilePath) {
+	if (-not($SuppressDiffToolPopup) -and $CertifiedFilePath) {
         $params = "`"$($FilePath)`" `"$($CertifiedFilePath)`" /readonly"
 
         "Displaying difference between actual & certified results." | Write-Verbose  
@@ -268,7 +268,7 @@ function Confirm-File {
 
 function Test-MedmSolution {
 
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
@@ -289,7 +289,7 @@ function Test-MedmSolution {
         [string]$CertifiedResultPath = $null,
         [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 		[switch]$OutputTable,
-		[switch]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
+		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
 		[string]$TestName
     )
 
@@ -310,7 +310,7 @@ function Test-MedmSolution {
 		-CertifiedResultPath $CertifiedResultPath `
 		-BeyondComparePath $BeyondComparePath `
 		-OutputTable:$OutputTable.IsPresent `
-		-SuppressDiffToolPopup:$SuppressDiffToolPopup.IsPresent `
+		-SuppressDiffToolPopup $SuppressDiffToolPopup `
 		-TestName $TestName
 }
 
@@ -383,4 +383,14 @@ function Publish-Results {
 
 		return $path
 	}
+}
+
+<#
+.SYNOPSIS
+Duplicates functionality of $PSScriptPath to support earlier versions of PowerShell
+#>
+function Get-ScriptDir
+{
+    $path = Split-Path $script:MyInvocation.MyCommand.Path
+    return "$path\"
 }

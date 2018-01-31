@@ -5,6 +5,21 @@ $Global:DefaultBeyondComparePath = ""
 $Global:DefaultSqlScriptType = "Sql Script"
 $Global:DefaultReportFolder = "C:\HqTest\Results"
 
+# support PS version 2, which does not automatically load snapins
+if (2 -eq $($PSVersionTable.PSVersion.Major)) {
+	Write-Host "Recognized PS version 2. Loading SQLPS Module"
+	#Add-PSSnapin SqlServerCmdletSnapin100
+	#Add-PSSnapin SqlServerProviderSnapin100
+	Import-Module SQLPS -ErrorAction Stop
+
+	if (-not (Get-Module -Name SQLPS | Where-Object {$_.ExportedCommands.Count -gt 0})) {
+		Write-Wrror "The SQLPS module is not loaded"
+	}
+	if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
+		Write-Error "Unabled to find Invoke-SqlCmd cmdlet"
+	}
+}
+
 function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
@@ -39,7 +54,7 @@ function Invoke-SqlScripts {
             $SqlPath = Join-Path -Path $SqlDir -ChildPath $_
             if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
                 if ($OutputPath) { 
-                    "========== $($_) ==========" | Out-File -FilePath $(Split-Path $OutputPath -Leaf) -Append 
+                    "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
 					if ($OutputTable) {
 						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -AutoSize -Wrap | Out-File -FilePath $OutputPath -Append
 					}
@@ -138,7 +153,7 @@ function Invoke-MedmComponent {
 
 	# Execute MEDM solution.
     "Beginning execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
-    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params}
+    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params <#2>&1#> }
     "Completed execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
 
     # Invoke cleanup scripts.
@@ -254,7 +269,7 @@ function Confirm-File {
 		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
 		$result = @{
 			Status = %{if (0 -eq $diff.Count) {"PASSED"} else {"FAILED"}}
-			# Time = $stopWatch.Elapsed.TotalMilliseconds
+			Time = $stopWatch.Elapsed.TotalMilliseconds
 			Name = $TestName
 		}
 		if ($result.Status -eq "FAILED") {
@@ -352,8 +367,11 @@ function Publish-Results {
 		{   
 		    $newTestCase = $newTestCaseTemplate.clone()
 		    $newTestCase.classname = $TestSuiteName
-		    $newTestCase.name = $result.Name.ToString()
-		    $newTestCase.time = [TimeSpan]::FromMilliseconds($result.Time).ToString("c")
+
+			$newTestCase.name = $result.Name.ToString()
+			$newTestCase.time = [TimeSpan]::FromMilliseconds($result.Time).ToString("c")
+
+
 		    if($result.Status -eq "PASSED")
 		    {   #Remove the failure node, since this is a success
 		        $newTestCase.RemoveChild($newTestCase.ChildNodes[0]) | Out-Null
@@ -371,7 +389,7 @@ function Publish-Results {
 		$xml.testsuite.testcase | Where-Object { $_.Name -eq "" } | ForEach-Object  { [void]$xml.testsuite.RemoveChild($_) }
 
 		# save xml to file
-		$path = "$($ReportFolder)\$($TestSuiteName).xml"
+		$path = "$($ReportFolder)\$($TestSuiteName)_junit_results.xml"
 		$originalPath = $path
 		$i = 0;
 		while (Test-Path $path) {

@@ -5,8 +5,17 @@ $Global:DefaultBeyondComparePath = ""
 $Global:DefaultSqlScriptType = "Sql Script"
 $Global:DefaultReportFolder = "C:\HqTest\Results"
 
+Push-Location
+
+if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
+	Write-Host 'Invoke-Sqlcmd not loaded: loading SQLPS to fix'
+	Push-Location # save the current location
+	$dummy = Import-Module SQLPS -ErrorAction Stop # Importing this module forces the location to a SqlServer prompt
+	Pop-Location # get back to the current location, counteracting the side effect of importing SQLPS	
+}
+
 function Invoke-SqlScripts {
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
         [Parameter(Mandatory = $True)]
@@ -26,13 +35,11 @@ function Invoke-SqlScripts {
 
 		[switch]$OutputTable
     )
-
     # Default $SqlDir to current location.
     if (-Not $SqlDir) {$SqlDir = Get-Location}
-
     # Iterate through $Sql list & execute each in turn.
     if ($SqlFiles) {
-        "Beginning $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
+		"Beginning $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
         Push-Location
         if ($OutputPath) { "" | Out-File -FilePath $OutputPath }
         $SqlFiles.Split(",") | ForEach {
@@ -59,7 +66,7 @@ function Invoke-SqlScripts {
 
 function Invoke-MedmSolution {
 
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
@@ -138,7 +145,7 @@ function Invoke-MedmComponent {
 
 	# Execute MEDM solution.
     "Beginning execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
-    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params}
+    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params <#2>&1#> | Write-Host }
     "Completed execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
 
     # Invoke cleanup scripts.
@@ -155,7 +162,7 @@ function Invoke-MedmComponent {
 
 function Test-MedmComponent {
 
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
@@ -179,7 +186,7 @@ function Test-MedmComponent {
 		[string]$CertifiedResultPath = $null,
 		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 		[switch]$OutputTable,
-		[switch]$SuppressDiffToolPopup,
+		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
 		[string]$TestName
     )
 	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
@@ -193,8 +200,8 @@ function Test-MedmComponent {
         -ComponentName $ComponentName `
         -ConfigurableParams $ConfigurableParams `
         -SetupSqlDir $SetupSqlDir `
-        -SetupSqlFiles $SetupSqlFiles `
-	| Write-Host
+        -SetupSqlFiles $SetupSqlFiles # `
+	# | Write-Host
 
     # Invoke result scripts.
 	if ($ResultSqlFiles) {
@@ -223,25 +230,27 @@ function Test-MedmComponent {
 	$result = Confirm-File `
 		-FilePath $TestResultPath `
 		-CertifiedFilePath $CertifiedResultPath `
-		-SuppressDiffToolPopup:$SuppressDiffToolPopup `
+		-SuppressDiffToolPopup $SuppressDiffToolPopup `
 		-TestName $TestName `
 		-BeyondComparePath $BeyondComparePath
+
+	Write-Host $result
 
 	return $result
 }
 
 
 function Confirm-File {
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 	Param(
 		[string][Parameter(Mandatory = $True)] $FilePath,
 		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
-		[switch]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
+		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
 		[string]$TestName,
 		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath
 	)
 
-	if (-not($SuppressDiffToolPopup.IsPresent) -and $CertifiedFilePath) {
+	if (-not($SuppressDiffToolPopup) -and $CertifiedFilePath) {
         $params = "`"$($FilePath)`" `"$($CertifiedFilePath)`" /readonly"
 
         "Displaying difference between actual & certified results." | Write-Verbose  
@@ -253,10 +262,11 @@ function Confirm-File {
 	if ($CertifiedFilePath) {
 		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
 		$result = @{
-			Status = %{if (0 -eq $diff.Count) {"PASSED"} else {"FAILED"}}
-			# Time = $stopWatch.Elapsed.TotalMilliseconds
+			Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
+			Time = $stopWatch.Elapsed.TotalMilliseconds
 			Name = $TestName
 		}
+
 		if ($result.Status -eq "FAILED") {
 			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
 		}
@@ -265,10 +275,9 @@ function Confirm-File {
 
 }
 
-
 function Test-MedmSolution {
 
-    [CmdletBinding(SupportsShouldProcess = $True, PositionalBinding = $False)]
+    [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
@@ -289,7 +298,7 @@ function Test-MedmSolution {
         [string]$CertifiedResultPath = $null,
         [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
 		[switch]$OutputTable,
-		[switch]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
+		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
 		[string]$TestName
     )
 
@@ -310,7 +319,7 @@ function Test-MedmSolution {
 		-CertifiedResultPath $CertifiedResultPath `
 		-BeyondComparePath $BeyondComparePath `
 		-OutputTable:$OutputTable.IsPresent `
-		-SuppressDiffToolPopup:$SuppressDiffToolPopup.IsPresent `
+		-SuppressDiffToolPopup $SuppressDiffToolPopup `
 		-TestName $TestName
 }
 
@@ -344,7 +353,7 @@ function Publish-Results {
 		$xml.testsuite.tests = $Results.Count.ToString()
 		$xml.testsuite.timestamp = (Get-Date -Format u).ToString()
 		$totalTime = ($Results | Measure-Object -Property Time -Sum).Sum
-		$xml.testsuite.time = [TimeSpan]::FromMilliseconds($totalTime).ToString("c")
+		$xml.testsuite.time = "{0:c}" -f ([TimeSpan]::FromMilliseconds($totalTime))
 		$xml.testsuite.failures = ($Results | Where-Object {$_.Status -eq "FAILED"} | Measure-Object).Count.ToString()
 
 		# populate test-level attributes
@@ -352,11 +361,14 @@ function Publish-Results {
 		{   
 		    $newTestCase = $newTestCaseTemplate.clone()
 		    $newTestCase.classname = $TestSuiteName
-		    $newTestCase.name = $result.Name.ToString()
-		    $newTestCase.time = [TimeSpan]::FromMilliseconds($result.Time).ToString("c")
+
+			$newTestCase.name = $result.Name.ToString()
+			$newTestCase.time = "{0:c}" -f ([TimeSpan]::FromMilliseconds($result.Time))
+
+
 		    if($result.Status -eq "PASSED")
 		    {   #Remove the failure node, since this is a success
-		        $newTestCase.RemoveChild($newTestCase.ChildNodes[0]) | Out-Null
+		        $newTestCase.RemoveChild($newTestCase.failure) | Out-Null
 		    }
 		    else
 		    {
@@ -371,7 +383,10 @@ function Publish-Results {
 		$xml.testsuite.testcase | Where-Object { $_.Name -eq "" } | ForEach-Object  { [void]$xml.testsuite.RemoveChild($_) }
 
 		# save xml to file
-		$path = "$($ReportFolder)\$($TestSuiteName).xml"
+		if(!(Test-Path -Path $ReportFolder )){
+			New-Item -ItemType directory -Path $ReportFolder # ensure folder exists
+		}
+		$path = "$($ReportFolder)\$($TestSuiteName)_junit_results.xml"
 		$originalPath = $path
 		$i = 0;
 		while (Test-Path $path) {
@@ -384,3 +399,15 @@ function Publish-Results {
 		return $path
 	}
 }
+
+<#
+.SYNOPSIS
+Duplicates functionality of $PSScriptPath to support earlier versions of PowerShell
+#>
+function Get-ScriptDir
+{
+    $path = Split-Path $script:MyInvocation.MyCommand.Path
+    return "$path\"
+}
+
+Pop-Location

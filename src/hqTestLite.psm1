@@ -5,19 +5,13 @@ $Global:DefaultBeyondComparePath = ""
 $Global:DefaultSqlScriptType = "Sql Script"
 $Global:DefaultReportFolder = "C:\HqTest\Results"
 
-# support PS version 2, which does not automatically load snapins
-if (2 -eq $($PSVersionTable.PSVersion.Major)) {
-	Write-Host "Recognized PS version 2. Loading SQLPS Module"
-	#Add-PSSnapin SqlServerCmdletSnapin100
-	#Add-PSSnapin SqlServerProviderSnapin100
-	Import-Module SQLPS -ErrorAction Stop
+Push-Location
 
-	if (-not (Get-Module -Name SQLPS | Where-Object {$_.ExportedCommands.Count -gt 0})) {
-		Write-Wrror "The SQLPS module is not loaded"
-	}
-	if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
-		Write-Error "Unabled to find Invoke-SqlCmd cmdlet"
-	}
+if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
+	Write-Host 'Invoke-Sqlcmd not loaded: loading SQLPS to fix'
+	Push-Location # save the current location
+	$dummy = Import-Module SQLPS -ErrorAction Stop # Importing this module forces the location to a SqlServer prompt
+	Pop-Location # get back to the current location, counteracting the side effect of importing SQLPS	
 }
 
 function Invoke-SqlScripts {
@@ -41,13 +35,11 @@ function Invoke-SqlScripts {
 
 		[switch]$OutputTable
     )
-
     # Default $SqlDir to current location.
     if (-Not $SqlDir) {$SqlDir = Get-Location}
-
     # Iterate through $Sql list & execute each in turn.
     if ($SqlFiles) {
-        "Beginning $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
+		"Beginning $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
         Push-Location
         if ($OutputPath) { "" | Out-File -FilePath $OutputPath }
         $SqlFiles.Split(",") | ForEach {
@@ -153,7 +145,7 @@ function Invoke-MedmComponent {
 
 	# Execute MEDM solution.
     "Beginning execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
-    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params <#2>&1#> }
+    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params <#2>&1#> | Write-Host }
     "Completed execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
 
     # Invoke cleanup scripts.
@@ -208,8 +200,8 @@ function Test-MedmComponent {
         -ComponentName $ComponentName `
         -ConfigurableParams $ConfigurableParams `
         -SetupSqlDir $SetupSqlDir `
-        -SetupSqlFiles $SetupSqlFiles `
-	| Write-Host
+        -SetupSqlFiles $SetupSqlFiles # `
+	# | Write-Host
 
     # Invoke result scripts.
 	if ($ResultSqlFiles) {
@@ -242,6 +234,8 @@ function Test-MedmComponent {
 		-TestName $TestName `
 		-BeyondComparePath $BeyondComparePath
 
+	Write-Host $result
+
 	return $result
 }
 
@@ -268,10 +262,11 @@ function Confirm-File {
 	if ($CertifiedFilePath) {
 		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
 		$result = @{
-			Status = %{if (0 -eq $diff.Count) {"PASSED"} else {"FAILED"}}
+			Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
 			Time = $stopWatch.Elapsed.TotalMilliseconds
 			Name = $TestName
 		}
+
 		if ($result.Status -eq "FAILED") {
 			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
 		}
@@ -279,7 +274,6 @@ function Confirm-File {
 	}
 
 }
-
 
 function Test-MedmSolution {
 
@@ -359,7 +353,7 @@ function Publish-Results {
 		$xml.testsuite.tests = $Results.Count.ToString()
 		$xml.testsuite.timestamp = (Get-Date -Format u).ToString()
 		$totalTime = ($Results | Measure-Object -Property Time -Sum).Sum
-		$xml.testsuite.time = [TimeSpan]::FromMilliseconds($totalTime).ToString("c")
+		$xml.testsuite.time = "{0:c}" -f ([TimeSpan]::FromMilliseconds($totalTime))
 		$xml.testsuite.failures = ($Results | Where-Object {$_.Status -eq "FAILED"} | Measure-Object).Count.ToString()
 
 		# populate test-level attributes
@@ -369,12 +363,12 @@ function Publish-Results {
 		    $newTestCase.classname = $TestSuiteName
 
 			$newTestCase.name = $result.Name.ToString()
-			$newTestCase.time = [TimeSpan]::FromMilliseconds($result.Time).ToString("c")
+			$newTestCase.time = "{0:c}" -f ([TimeSpan]::FromMilliseconds($result.Time))
 
 
 		    if($result.Status -eq "PASSED")
 		    {   #Remove the failure node, since this is a success
-		        $newTestCase.RemoveChild($newTestCase.ChildNodes[0]) | Out-Null
+		        $newTestCase.RemoveChild($newTestCase.failure) | Out-Null
 		    }
 		    else
 		    {
@@ -389,6 +383,9 @@ function Publish-Results {
 		$xml.testsuite.testcase | Where-Object { $_.Name -eq "" } | ForEach-Object  { [void]$xml.testsuite.RemoveChild($_) }
 
 		# save xml to file
+		if(!(Test-Path -Path $ReportFolder )){
+			New-Item -ItemType directory -Path $ReportFolder # ensure folder exists
+		}
 		$path = "$($ReportFolder)\$($TestSuiteName)_junit_results.xml"
 		$originalPath = $path
 		$i = 0;
@@ -412,3 +409,5 @@ function Get-ScriptDir
     $path = Split-Path $script:MyInvocation.MyCommand.Path
     return "$path\"
 }
+
+Pop-Location

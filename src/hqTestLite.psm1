@@ -1,16 +1,18 @@
 $Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_10_2_4_1\CadisProcessAgent.exe"
 $Global:DefaultMedmDbServer = "MyDbServer"
 $Global:DefaultMedmDbName = "MyDbName"
-$Global:DefaultBeyondComparePath = ""
+$Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe"
+$Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}")
+$Global:DefaultSuppressTextDiffPopup = $false
 $Global:DefaultSqlScriptType = "Sql Script"
-$Global:DefaultReportFolder = "C:\HqTest\Results"
+$Global:DefaultReportFolder = "C:\HqTestLite\Results"
 
 Push-Location
 
 if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
 	Write-Host 'Invoke-Sqlcmd not loaded: loading SQLPS to fix'
 	Push-Location # save the current location
-	$dummy = Import-Module SQLPS -ErrorAction Stop # Importing this module forces the location to a SqlServer prompt
+	$dummy = Install-Module -Name SqlServer -ErrorAction Stop # Importing this module forces the location to a SqlServer prompt
 	Pop-Location # get back to the current location, counteracting the side effect of importing SQLPS	
 }
 
@@ -184,9 +186,10 @@ function Test-MedmComponent {
 		[Parameter(Mandatory = $True)]
         [string]$TestResultPath,
 		[string]$CertifiedResultPath = $null,
-		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
+		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
+		[string]$TextDiffParams = $Global:DefaultTextDiffParams,
 		[switch]$OutputTable,
-		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
+		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
 		[string]$TestName
     )
 	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
@@ -230,9 +233,10 @@ function Test-MedmComponent {
 	$result = Confirm-File `
 		-FilePath $TestResultPath `
 		-CertifiedFilePath $CertifiedResultPath `
-		-SuppressDiffToolPopup $SuppressDiffToolPopup `
+		-SuppressTextDiffPopup $SuppressTextDiffPopup `
 		-TestName $TestName `
-		-BeyondComparePath $BeyondComparePath
+		-TextDiffExe $TextDiffExe `
+		-TextDiffParams $TextDiffParams
 
 	Write-Host $result
 
@@ -245,17 +249,23 @@ function Confirm-File {
 	Param(
 		[string][Parameter(Mandatory = $True)] $FilePath,
 		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
-		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
+		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
 		[string]$TestName,
-		[string]$BeyondComparePath = $Global:DefaultBeyondComparePath
+		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
+		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams
 	)
 
-	if (-not($SuppressDiffToolPopup) -and $CertifiedFilePath) {
-        $params = "`"$($FilePath)`" `"$($CertifiedFilePath)`" /readonly"
+	if (-not($SuppressTextDiffPopup) -and $CertifiedFilePath) {
+        $params = @()
+        foreach ($param in $TextDiffParams) {
+            $param = $param -replace "{CurrentResult}", $FilePath
+            $param = $param -replace "{CertifiedResult}", $CertifiedFilePath
+            $params += $param
+        }
 
         "Displaying difference between actual & certified results." | Write-Verbose  
-        if ($PSCmdlet.ShouldProcess("Beyond Compare")) {& $BeyondComparePath $params}
-        else {"`"$($BeyondComparePath)`" $($params)" | Out-Host}
+        if ($PSCmdlet.ShouldProcess("Text Diff")) {& $TextDiffExe $params}
+        else {"`"$($TextDiffExe)`" $params" | Out-Host}
     }
 
 	# get diff to produce test results
@@ -296,9 +306,10 @@ function Test-MedmSolution {
         [Parameter(Mandatory = $True)]
         [string]$TestResultPath,
         [string]$CertifiedResultPath = $null,
-        [string]$BeyondComparePath = $Global:DefaultBeyondComparePath,
+        [string]$TextDiffCmd = $Global:DefaultTextDiffCmd,
+		[string]$TextDiffParams = $Global:DefaultTextDiffParams,
 		[switch]$OutputTable,
-		[bool]$SuppressDiffToolPopup = $Global:SuppressDiffToolPopup,
+		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
 		[string]$TestName
     )
 
@@ -317,9 +328,10 @@ function Test-MedmSolution {
 		-CleanupSqlFiles $CleanupSqlFiles `
 		-TestResultPath $TestResultPath `
 		-CertifiedResultPath $CertifiedResultPath `
-		-BeyondComparePath $BeyondComparePath `
+		-TextDiffCmd $TextDiffCmd `
+		-TextDiffParams $TextDiffParams `
 		-OutputTable:$OutputTable.IsPresent `
-		-SuppressDiffToolPopup $SuppressDiffToolPopup `
+		-SuppressTextDiffPopup $SuppressTextDiffPopup `
 		-TestName $TestName
 }
 

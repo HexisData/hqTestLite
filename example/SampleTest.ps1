@@ -1,5 +1,5 @@
 # Locate the hqTestLite module in a central repository to make it easy to upgrade.
-Import-Module "\\netshare\hqTestLite.psm1" -Force
+Import-Module "C:\hqTestLite\src\hqTestLite.psm1" -Force
 
 # Override global defaults with values specific to the test environment.
 Invoke-Expression "\\netshare\Test\EnvironmentOverrides.ps1"

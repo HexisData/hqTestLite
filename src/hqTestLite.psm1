@@ -1,4 +1,4 @@
-$Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_10_2_4_1\CadisProcessAgent.exe"
+$Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe"
 $Global:DefaultMedmDbServer = "MyDbServer"
 $Global:DefaultMedmDbName = "MyDbName"
 $Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe"
@@ -187,7 +187,7 @@ function Test-MedmComponent {
         [string]$TestResultPath,
 		[string]$CertifiedResultPath = $null,
 		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
-		[string]$TextDiffParams = $Global:DefaultTextDiffParams,
+		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
 		[switch]$OutputTable,
 		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
 		[string]$TestName
@@ -306,8 +306,8 @@ function Test-MedmSolution {
         [Parameter(Mandatory = $True)]
         [string]$TestResultPath,
         [string]$CertifiedResultPath = $null,
-        [string]$TextDiffCmd = $Global:DefaultTextDiffCmd,
-		[string]$TextDiffParams = $Global:DefaultTextDiffParams,
+        [string]$TextDiffExe = $Global:DefaultTextDiffExe,
+		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
 		[switch]$OutputTable,
 		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
 		[string]$TestName
@@ -328,7 +328,7 @@ function Test-MedmSolution {
 		-CleanupSqlFiles $CleanupSqlFiles `
 		-TestResultPath $TestResultPath `
 		-CertifiedResultPath $CertifiedResultPath `
-		-TextDiffCmd $TextDiffCmd `
+		-TextDiffExe $TextDiffExe `
 		-TextDiffParams $TextDiffParams `
 		-OutputTable:$OutputTable.IsPresent `
 		-SuppressTextDiffPopup $SuppressTextDiffPopup `

@@ -13,7 +13,7 @@ Copy-Item -Path "equity_namr.dif.20180917" -Destination "\\sea-700-09.paraport.c
 # No Solution parameters.
 Test-MedmSolution `
     -SolutionName "PPA 1000 BBO Equity Load" `
-    -ResultSqlFiles "Result1.sql,Result2.sql" `
+    -ResultSqlFiles "T_PPA_FILE_MONITOR.sql,T_PPA_PROCESS_MONITOR.sql,T_PPA_EXCEPTION_LOAD.sql,T_PPA_BBO_EQUITY_SEC.sql" `
     -OutputTable `
     -TestResultPath "Result.txt" `
     -CertifiedResultPath "Result.certified.txt" `

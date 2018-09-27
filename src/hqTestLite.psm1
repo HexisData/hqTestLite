@@ -10,7 +10,7 @@ $Global:DefaultReportFolder = "C:\HqTestLite\Results"
 Push-Location
 
 if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
-	Write-Host 'Invoke-Sqlcmd not loaded: loading SQLPS to fix'
+	Write-Host 'Invoke-Sqlcmd not loaded: loading SqlServer to fix'
 	Push-Location # save the current location
 	$dummy = Install-Module -Name SqlServer -ErrorAction Stop # Importing this module forces the location to a SqlServer prompt
 	Pop-Location # get back to the current location, counteracting the side effect of importing SQLPS	
@@ -203,8 +203,7 @@ function Test-MedmComponent {
         -ComponentName $ComponentName `
         -ConfigurableParams $ConfigurableParams `
         -SetupSqlDir $SetupSqlDir `
-        -SetupSqlFiles $SetupSqlFiles # `
-	# | Write-Host
+        -SetupSqlFiles $SetupSqlFiles
 
     # Invoke result scripts.
 	if ($ResultSqlFiles) {
@@ -255,34 +254,51 @@ function Confirm-File {
 		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams
 	)
 
-	if (-not($SuppressTextDiffPopup) -and $CertifiedFilePath) {
-        $params = @()
-        foreach ($param in $TextDiffParams) {
-            $param = $param -replace "{CurrentResult}", $FilePath
-            $param = $param -replace "{CertifiedResult}", $CertifiedFilePath
-            $params += $param
-        }
+    # Init result object.
+	$result = @{
+		Time = $stopWatch.Elapsed.TotalMilliseconds
+		Name = $TestName
+	}
 
-        "Displaying difference between actual & certified results." | Write-Verbose  
-        if ($PSCmdlet.ShouldProcess("Text Diff")) {& $TextDiffExe $params}
-        else {"`"$($TextDiffExe)`" $params" | Out-Host}
+    # If result file doesn't exist...
+    if (-not(Test-Path $FilePath)) {
+		$result.Status = "FAILED"
+        $result.Reason = "Result file `"$($FilePath)`" does not exist."
     }
 
-	# get diff to produce test results
-	if ($CertifiedFilePath) {
+    # ... else if certified result file doesn't exist...
+    elseif (-not(Test-Path $CertifiedFilePath)) {
+		$result.Status = "FAILED"
+        $result.Reason = "Certified result file `"$($CertifiedFilePath)`" does not exist."
+    }
+
+    # ... else produce result.
+    else {
+        # Complete result object.
 		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
-		$result = @{
-			Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
-			Time = $stopWatch.Elapsed.TotalMilliseconds
-			Name = $TestName
-		}
+		$result.Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
 
 		if ($result.Status -eq "FAILED") {
 			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
-		}
-		return New-Object PSObject -Property $result
-	}
 
+            # Visualize diff if not suppressed.
+	        if (-not($SuppressTextDiffPopup)) {
+                $params = @()
+                foreach ($param in $TextDiffParams) {
+                    $param = $param -replace "{CurrentResult}", $FilePath
+                    $param = $param -replace "{CertifiedResult}", $CertifiedFilePath
+                    $params += $param
+                }
+
+                "Displaying difference between actual & certified results." | Write-Verbose  
+                if ($PSCmdlet.ShouldProcess("Text Diff")) {& $TextDiffExe $params}
+                else {"`"$($TextDiffExe)`" $params" | Out-Host}
+            }
+		}
+    }
+
+    # Return result.
+	return New-Object PSObject -Property $result
 }
 
 function Test-MedmSolution {

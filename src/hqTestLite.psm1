@@ -67,9 +67,7 @@ function Invoke-SqlScripts {
 }
 
 function Invoke-MedmSolution {
-
     [CmdletBinding(SupportsShouldProcess = $True)]
-
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
 
@@ -106,6 +104,7 @@ function Invoke-MedmSolution {
 }
 
 function Invoke-MedmComponent {
+        [CmdletBinding(SupportsShouldProcess = $True)]
 	    Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
 
@@ -147,7 +146,7 @@ function Invoke-MedmComponent {
 
 	# Execute MEDM solution.
     "Beginning execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
-    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params <#2>&1#> | Write-Host }
+    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params  | Write-Host }
     "Completed execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
 
     # Invoke cleanup scripts.
@@ -163,9 +162,7 @@ function Invoke-MedmComponent {
 }
 
 function Test-MedmComponent {
-
     [CmdletBinding(SupportsShouldProcess = $True)]
-
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
 		[string]$DbServer = $Global:DefaultMedmDbServer,
@@ -190,20 +187,23 @@ function Test-MedmComponent {
 		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
 		[switch]$OutputTable,
 		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
-		[string]$TestName
+		[string]$TestName,
+		[switch]$SkipProcess
     )
 	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
 
     # Invoke setup scripts and MEDM component.
-    Invoke-MedmComponent `
-        -ProcessAgentPath $ProcessAgentPath `
-        -DbServer $DbServer `
-        -DbName $DbName `
-		-ComponentType $ComponentType `
-        -ComponentName $ComponentName `
-        -ConfigurableParams $ConfigurableParams `
-        -SetupSqlDir $SetupSqlDir `
-        -SetupSqlFiles $SetupSqlFiles
+    if (-not($SkipProcess)) {
+        Invoke-MedmComponent `
+            -ProcessAgentPath $ProcessAgentPath `
+            -DbServer $DbServer `
+            -DbName $DbName `
+		    -ComponentType $ComponentType `
+            -ComponentName $ComponentName `
+            -ConfigurableParams $ConfigurableParams `
+            -SetupSqlDir $SetupSqlDir `
+            -SetupSqlFiles $SetupSqlFiles
+    }
 
     # Invoke result scripts.
 	if ($ResultSqlFiles) {
@@ -218,13 +218,15 @@ function Test-MedmComponent {
 	}
 
     # Invoke cleanup scripts.
-    if ($CleanupSqlFiles) {
-        Invoke-SqlScripts `
-            -DbServer $DbServer `
-            -DbName $DbName `
-            -SqlDir $CleanupSqlDir `
-            -SqlFiles $CleanupSqlFiles `
-            -ScriptType "Cleanup Script"
+    if (-not($SkipProcess)) {
+        if ($CleanupSqlFiles) {
+            Invoke-SqlScripts `
+                -DbServer $DbServer `
+                -DbName $DbName `
+                -SqlDir $CleanupSqlDir `
+                -SqlFiles $CleanupSqlFiles `
+                -ScriptType "Cleanup Script"
+        }
     }
 
 	$stopWatch.Stop()
@@ -326,7 +328,8 @@ function Test-MedmSolution {
 		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
 		[switch]$OutputTable,
 		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
-		[string]$TestName
+		[string]$TestName,
+		[switch]$SkipProcess
     )
 
 	Test-MedmComponent `
@@ -348,7 +351,9 @@ function Test-MedmSolution {
 		-TextDiffParams $TextDiffParams `
 		-OutputTable:$OutputTable.IsPresent `
 		-SuppressTextDiffPopup $SuppressTextDiffPopup `
-		-TestName $TestName
+		-TestName $TestName `
+		-SkipProcess:$SkipProcess.IsPresent 
+
 }
 
 function Publish-Results {

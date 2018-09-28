@@ -16,4 +16,4 @@ Test-MedmSolution `
     -ResultSqlFiles "T_PPA_FILE_MONITOR.sql,T_PPA_PROCESS_MONITOR.sql,T_PPA_EXCEPTION_LOAD.sql,T_PPA_BBO_EQUITY_SEC.sql" `
     -OutputTable `
     -TestResultPath "Result.txt" `
-    -CertifiedResultPath "Result.certified.txt" `
+    -CertifiedResultPath "Result.certified.txt"

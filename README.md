@@ -1,5 +1,20 @@
 # hqTestLite
-A PowerShell version of hqTest. Currently only supports testing of Markit EDM Solutions.
+hqTestLite is an open-source, PowerShell-based testing framework. It is designed to automate the testing of complex systems (like Enterprise Data Management systems) that normally resist efficient test automation.
+
+Features:
+
+* Tests are expressed as short PowerShell scripts, which live in your version control repository and travel with your code.
+* The same set of tests can be run against multiple environments with a simple config file edit.
+
+The only platform currently supported is Markit EDM.
+
+## Getting Started
+
+1. Run the scripts in the [DB directory](https://github.com/HexisData/hqTestLite/tree/parametric/DB) in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code (which is very short).
+
+1. Copy the [Tests directory](https://github.com/HexisData/hqTestLite/tree/parametric/Tests) into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
+
+1. From the [Local directory](https://github.com/HexisData/hqTestLite/tree/parametric/Local), copy the hqTestLite folder into the root of your C: drive. THIS IS IMPORTANT! Your test scripts will be looking for the config file in this directory, and it must be in the same local location for each user!
 
 ## Contents
 

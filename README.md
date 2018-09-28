@@ -1,4 +1,5 @@
 # hqTestLite
+
 hqTestLite is an open-source, PowerShell-based testing framework. It is designed to automate the testing of complex systems (like Enterprise Data Management systems) that normally resist efficient test automation.
 
 Features:
@@ -14,7 +15,54 @@ The only platform currently supported is Markit EDM.
 
 1. Copy the [Tests directory](https://github.com/HexisData/hqTestLite/tree/parametric/Tests) into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
 
-1. From the [Local directory](https://github.com/HexisData/hqTestLite/tree/parametric/Local), copy the hqTestLite folder into the root of your C: drive. THIS IS IMPORTANT! Your test scripts will be looking for the config file in this directory, and it must be in the same local location for each user!
+1. From the [Local directory](https://github.com/HexisData/hqTestLite/tree/parametric/Local), copy the hqTestLite folder into the root of your C: drive. THIS IS IMPORTANT! Your test scripts will be looking for the **config.ps1** configuration script in this directory, and it must be in the same local location for each user!
+
+### Local Execution Policy
+
+All hqTestLite tests are articulated as PowerShell scripts. The first time you run a PowerShell script on your machine, you may get an error indicating that the execution of scripts is disabled on your system. If this occurs, open a PowerShell command prompt **as administrator** and run the following command:
+
+```powershell
+Set-ExecutionPolicy Unrestricted
+```
+	
+Click [here](https://www.mssqltips.com/sqlservertip/2702/setting-the-powershell-execution-policy) for more info on setting your local execution policy.
+
+### SQL Server Module
+
+The first time you execute a test, hqTestLite may attempt to download and install the SqlServer PowerShell module. If this occurs, you will see prompts requesting permission to run NuGet. Grant the requested permissions. 
+
+If this process breaks and you see errors indicating that the module is not connecting to SQL Server, open a PowerShell command prompt **as administrator** and run the followig command:
+
+```powershell
+Install-Module -Name SqlServer
+```
+
+### Markit EDM
+
+By default, hqTestLite is expecting Markit EDM v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, please add the following line to your local **config.ps1** configuration script:
+
+```powershell
+$Global:DefaultMedmProcessAgentPath = "<path to MEDM exe>\CadisProcessAgent.exe"
+```
+
+### WinMerge
+	
+hqTestLite uses [WinMerge](http://winmerge.org) as its text comparison tool. If you don't already have it, please download and install WinMerge from [SourceForge](https://sourceforge.net/projects/winmerge)
+
+hqTestLite expects WinMerge to reside in its default installation directory. If you have elected to install WinMerge in a different directory, please add the following line to your local **config.ps1** configuration script:
+
+```powershell
+$Global:DefaultTextDiffExe = "<path to WinMerge exe>\WinMergeU.exe"
+```
+
+### Changing Environments
+
+By default, your tests will be executed against the DEV database. To execute in a different environment, edit the following lines in your local **config.ps1** configuration script:
+
+```powershell
+$Global:DefaultMedmDbServer = "<MEDM DB Server>"
+$Global:DefaultMedmDbName = "<MEDM DB Name>"
+```
 
 ## Contents
 
@@ -62,7 +110,7 @@ For test automation and continuous integration scenarios, the *Publish-Results* 
 
 Example below using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath. Leaving out directory params assuming SQL scripts are co-located with the test script. 
 
-```powershell
+```
 Test-MedmSolution `
     -SetupSqlFiles "MySolution_Setup.sql" `
     -SolutionName "MySolution" `

@@ -4,10 +4,11 @@ hqTestLite is an open-source, PowerShell-based testing framework. It is designed
 
 Features:
 
+* hqTestLite currently only supports the Markit EDM platform, but can easily be adapted to support testing of any platform of any kind that meets the following prerequisites:
+  * It can be invoked from the Windows command line.
+  * It can be induced to produce test output either via a text file or a query against a SQL Server database.
 * Tests are expressed as short PowerShell scripts, which live in your version control repository and travel with your code.
-* The same set of tests can be run against multiple environments with a simple config file edit.
-
-The only platform currently supported is Markit EDM.
+* The same set of tests can be shared across an entire team and run against multiple environments with a simple local config file edit.
 
 ## Getting Started
 

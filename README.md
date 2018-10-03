@@ -2,17 +2,18 @@
 
 hqTestLite is an open-source, PowerShell-based testing framework. It is designed to automate the testing of complex systems (like Enterprise Data Management systems) that normally resist efficient test automation.
 
-Features:
-
-* hqTestLite currently only supports the Markit EDM platform, but can easily be adapted to support testing of any platform of any kind that meets the following prerequisites:
+hqTestLite currently supports the Markit Enterprise Data Management platform, but can easily be adapted to support testing of any platform of any kind that meets the following prerequisites:
   * It can be invoked from the Windows command line.
   * It can be induced to produce test output either via a text file or a query against a SQL Server database.
-* Tests are expressed as short PowerShell scripts, which live in your version control repository and travel with your code.
-* The same set of tests can be shared across an entire team and run against multiple environments with a simple local config file edit.
+
+Other features:
+
+* Tests are expressed as short PowerShell scripts, which live in your version control repository and travel with your code. 
+* Tests can be shared and executed across an entire development team and multiple environments.
 
 ## Getting Started
 
-1. Run the scripts in the [DB directory](https://github.com/HexisData/hqTestLite/tree/parametric/DB) in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code (which is very short).
+1. Run the scripts in the [DB directory](https://github.com/HexisData/hqTestLite/tree/parametric/DB) in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code. Note that the Dump_Data stored procedure will be called by most of your test result scripts, so be sure to propagate any changes there as well!
 
 1. Copy the [Tests directory](https://github.com/HexisData/hqTestLite/tree/parametric/Tests) into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
 
@@ -67,17 +68,29 @@ $Global:DefaultMedmDbName = "<MEDM DB Name>"
 
 ## Contents
 
+**cert.ps1** &ndash; Target of the CERTIFY shortcut. Copies file *abc.xyz* to file *abc.certfied.xyz*.
+
+**CERTIFY shortcut** &ndash; Drop a result file on this shortcut to certify it.
+
+**hqTestLite.psd1** &ndash; hqTestLite PowerShell manifest.
+
 **hqTestLite.psm1** &ndash; hqTestLite PowerShell module.
 
-**config.ps1** &ndash; Sample environment configuration script.
+**DB directory** &ndash; Database objects to be installed in every environment to be tested.
 
-**SampleTest.ps1** &ndash; Sample test script.
+* **UDF_PPA_Core_Rows** &ndash; Utility function that generates a sequence of integers in a rowset.
 
-**DB/hq.tvf_Core_Rows** &ndash; Utility UDF that generates a sequence of integers in a rowset.
+* **UDF_PPA_Core_Split_Delimiter** &ndash; Utility function that splits a delimited list into a rowset.
 
-**DB/hq.tvf_Core_Split_Delimiter** &ndash; Utility UDF that splits a delimited list into a rowset.
+* **USP_PPA_Core_DumpData** &ndash; Utility stored procedure that dynamically extracts data from a table or view. Useful in result scripts as it can exclude or exclude columns by pattern and automatically pick up on object schema changes.
 
-**DB/hq.usp_Core_DumpData** &ndash; Utility SP that dynamically extracts data from a table or view. Useful in result scripts as it can exclude columns by pattern and automatically pick up on object schema changes.
+**Local directory** &ndash; Files to be copied to each user's local system.
+
+* **hqTestLite directory** &ndash; Copy this entire directory to the local C drive root. 
+
+  * **config.ps1** &ndash; Local environment configuration file.
+  
+**Test directory** &ndash; Sample test repository. Copy this into source control and use it as a starting point.
 
 ## Usage
 

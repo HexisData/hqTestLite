@@ -11,8 +11,9 @@ Copy-Item -Path "equity_namr.dif.20180917" -Destination "\\sea-700-09.paraport.c
 # No setup SQL since we dropped a file. 
 # No cleanup SQL, just to keep things simple.
 # No Solution parameters.
-Test-MedmSolution `
-    -SolutionName "PPA 1000 BBO Equity Load" `
+Test-MedmComponent `
+    -ComponentType "Solution" `
+    -ComponentName "PPA 1000 BBO Equity Load" `
     -ResultSqlDir "./ResultSql" `
     -ResultSqlFiles "T_PPA_FILE_MONITOR.sql,T_PPA_PROCESS_MONITOR.sql,T_PPA_EXCEPTION_LOAD.sql,T_PPA_BBO_EQUITY_SEC.sql" `
     -OutputTable `

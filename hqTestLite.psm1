@@ -5,7 +5,7 @@ $Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe"
 $Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}")
 $Global:DefaultSuppressTextDiffPopup = $false
 $Global:DefaultSqlScriptType = "Sql Script"
-$Global:DefaultReportFolder = "C:\HqTestLite\Results"
+$Global:DefaultReportFolder = "C:\hqTestLite\Results"
 
 Push-Location
 
@@ -33,10 +33,10 @@ function Invoke-SqlScripts {
 
         [string]$OutputPath = $null,
 
-        [string]$ScriptType = $Global:DefaultSqlScriptType,
-
-		[switch]$OutputTable
-    )
+		[switch]$OutputTable,
+ 
+        [string]$ScriptType = $Global:DefaultSqlScriptType
+   )
     # Default $SqlDir to current location.
     if (-Not $SqlDir) {$SqlDir = Get-Location}
     # Iterate through $Sql list & execute each in turn.
@@ -64,43 +64,6 @@ function Invoke-SqlScripts {
         Pop-Location
         "Completed $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
     }
-}
-
-function Invoke-MedmSolution {
-    [CmdletBinding(SupportsShouldProcess = $True)]
-    Param(
-        [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
-
-        [string]$DbServer = $Global:DefaultMedmDbServer,
-
-        [string]$DbName = $Global:DefaultMedmDbName,
-
-        [string]$SetupSqlDir = $null,
-
-        [string]$SetupSqlFiles = $null,
-
-        [Parameter(Mandatory = $True)]
-        [string]$SolutionName,
-
-        [string]$SolutionParams = $null,
-
-        [string]$CleanupSqlDir = $null,
-
-        [string]$CleanupSqlFiles = $null
-    )
-
-	Invoke-MedmComponent `
-		-ProcessAgentPath $ProcessAgentPath `
-		-DbServer $DbServer `
-		-DbName $DbName `
-		-SetupSqlDir $SetupSqlDir `
-		-SetupSqlFiles $SetupSqlFiles `
-		-ComponentType Solution `
-		-ComponentName $SolutionName `
-		-ConfigurableParams $SolutionParams `
-		-CleanupSqlDir $CleanupSqlDir `
-		-CleanupSqlFiles $CleanupSqlFiles
-
 }
 
 function Invoke-MedmComponent {
@@ -161,33 +124,109 @@ function Invoke-MedmComponent {
 
 }
 
+function Confirm-File {
+    [CmdletBinding(SupportsShouldProcess = $True)]
+	Param(
+		[string][Parameter(Mandatory = $True)] $FilePath,
+		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
+		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
+		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
+		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
+		[string]$TestName
+	)
+
+    # Init result object.
+	$result = @{
+		Time = $stopWatch.Elapsed.TotalMilliseconds
+		Name = $TestName
+	}
+
+    # If result file doesn't exist...
+    if (-not(Test-Path $FilePath)) {
+		$result.Status = "FAILED"
+        $result.Reason = "Result file `"$($FilePath)`" does not exist."
+    }
+
+    # ... else if certified result file doesn't exist...
+    elseif (-not(Test-Path $CertifiedFilePath)) {
+		$result.Status = "FAILED"
+        $result.Reason = "Certified result file `"$($CertifiedFilePath)`" does not exist."
+    }
+
+    # ... else produce result.
+    else {
+        # Complete result object.
+		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
+		$result.Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
+
+		if ($result.Status -eq "FAILED") {
+			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
+
+            # Visualize diff if not suppressed.
+	        if (-not($SuppressTextDiffPopup)) {
+                $params = @()
+                foreach ($param in $TextDiffParams) {
+                    $param = $param -replace "{CurrentResult}", $FilePath
+                    $param = $param -replace "{CertifiedResult}", $CertifiedFilePath
+                    $params += $param
+                }
+
+                "Displaying difference between actual & certified results." | Write-Verbose  
+                if ($PSCmdlet.ShouldProcess("Text Diff")) {& $TextDiffExe $params}
+                else {"`"$($TextDiffExe)`" $params" | Out-Host}
+            }
+		}
+    }
+
+    # Return result.
+	return New-Object PSObject -Property $result
+}
+
 function Test-MedmComponent {
     [CmdletBinding(SupportsShouldProcess = $True)]
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
+
 		[string]$DbServer = $Global:DefaultMedmDbServer,
+
 		[string]$DbName = $Global:DefaultMedmDbName,
+
 		[string]$SetupSqlDir = $null,
+
 		[string]$SetupSqlFiles = $null,
+
 		[Parameter(Mandatory = $True)]
         [string]$ComponentName,
+
 		[Parameter(Mandatory = $True)]
 		[ValidateSet("DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution")]
 		[string]$ComponentType,
+
 		[string]$ConfigurableParams = $null,
+
 		[string]$ResultSqlDir,
-		#[Parameter(Mandatory = $True)]
+
         [string]$ResultSqlFiles,
+
 		[string]$CleanupSqlDir = $null,
+
 		[string]$CleanupSqlFiles = $null,
+
 		[Parameter(Mandatory = $True)]
         [string]$TestResultPath,
+
 		[string]$CertifiedResultPath = $null,
+
 		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
+
 		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
+
 		[switch]$OutputTable,
+
 		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
+
 		[string]$TestName,
+
 		[switch]$SkipProcess
     )
 	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
@@ -242,118 +281,6 @@ function Test-MedmComponent {
 	Write-Host $result
 
 	return $result
-}
-
-
-function Confirm-File {
-    [CmdletBinding(SupportsShouldProcess = $True)]
-	Param(
-		[string][Parameter(Mandatory = $True)] $FilePath,
-		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
-		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
-		[string]$TestName,
-		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
-		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams
-	)
-
-    # Init result object.
-	$result = @{
-		Time = $stopWatch.Elapsed.TotalMilliseconds
-		Name = $TestName
-	}
-
-    # If result file doesn't exist...
-    if (-not(Test-Path $FilePath)) {
-		$result.Status = "FAILED"
-        $result.Reason = "Result file `"$($FilePath)`" does not exist."
-    }
-
-    # ... else if certified result file doesn't exist...
-    elseif (-not(Test-Path $CertifiedFilePath)) {
-		$result.Status = "FAILED"
-        $result.Reason = "Certified result file `"$($CertifiedFilePath)`" does not exist."
-    }
-
-    # ... else produce result.
-    else {
-        # Complete result object.
-		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
-		$result.Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
-
-		if ($result.Status -eq "FAILED") {
-			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
-
-            # Visualize diff if not suppressed.
-	        if (-not($SuppressTextDiffPopup)) {
-                $params = @()
-                foreach ($param in $TextDiffParams) {
-                    $param = $param -replace "{CurrentResult}", $FilePath
-                    $param = $param -replace "{CertifiedResult}", $CertifiedFilePath
-                    $params += $param
-                }
-
-                "Displaying difference between actual & certified results." | Write-Verbose  
-                if ($PSCmdlet.ShouldProcess("Text Diff")) {& $TextDiffExe $params}
-                else {"`"$($TextDiffExe)`" $params" | Out-Host}
-            }
-		}
-    }
-
-    # Return result.
-	return New-Object PSObject -Property $result
-}
-
-function Test-MedmSolution {
-
-    [CmdletBinding(SupportsShouldProcess = $True)]
-
-    Param(
-        [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
-        [string]$DbServer = $Global:DefaultMedmDbServer,
-        [string]$DbName = $Global:DefaultMedmDbName,
-        [string]$SetupSqlDir = $null,
-        [string]$SetupSqlFiles = $null,
-        [Parameter(Mandatory = $True)]
-        [string]$SolutionName,
-        [string]$SolutionParams = $null,
-        [string]$ResultSqlDir,
-        #[Parameter(Mandatory = $True)]
-        [string]$ResultSqlFiles,
-        [string]$CleanupSqlDir = $null,
-        [string]$CleanupSqlFiles = $null,
-        [Parameter(Mandatory = $True)]
-        [string]$TestResultPath,
-        [string]$CertifiedResultPath = $null,
-        [string]$TextDiffExe = $Global:DefaultTextDiffExe,
-		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
-		[switch]$OutputTable,
-		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
-		[string]$TestName,
-		[switch]$SkipProcess
-    )
-
-	Test-MedmComponent `
-		-ProcessAgentPath $ProcessAgentPath `
-		-DbServer $DbServer `
-		-DbName $DbName `
-		-SetupSqlDir $SetupSqlDir `
-		-SetupSqlFiles $SetupSqlFiles `
-		-ComponentName $SolutionName `
-		-ComponentType Solution `
-		-ConfigurableParams $SolutionParams `
-		-ResultSqlDir $ResultSqlDir `
-		-ResultSqlFiles $ResultSqlFiles `
-		-CleanupSqlDir $CleanupSqlDir `
-		-CleanupSqlFiles $CleanupSqlFiles `
-		-TestResultPath $TestResultPath `
-		-CertifiedResultPath $CertifiedResultPath `
-		-TextDiffExe $TextDiffExe `
-		-TextDiffParams $TextDiffParams `
-		-OutputTable:$OutputTable.IsPresent `
-		-SuppressTextDiffPopup $SuppressTextDiffPopup `
-		-TestName $TestName `
-		-SkipProcess:$SkipProcess.IsPresent 
-
 }
 
 function Publish-Results {

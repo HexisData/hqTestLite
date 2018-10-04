@@ -6,9 +6,10 @@ Invoke-Expression "C:\hqTestLite\config.ps1"
 
 # Test solution.
 Test-MedmSolution `
-    -SolutionName "PPA 4100 Master Security" `
     -SetupSqlDir "./SetupSql" `
     -SetupSqlFiles "T_PPA_BBO_EQUITY_FUND_SEC.sql,T_PPA_BBO_EQUITY_SEC.sql,T_PPA_OVERRIDE_SECURITY.sql,T_PPA_OVERRIDE_SECURITY_EXPIRY.sql" `
+    -ComponentType "Solution" `
+    -ComponentName "PPA 4100 Master Security" `
     -ResultSqlDir "./ResultSql" `
     -ResultSqlFiles "T_PPA_BBO_EQUITY_SEC.sql,T_PPA_BBO_EQUITY_FUND_SEC.sql,T_PPA_PREMASTER_SECURITY.sql,T_PPA_OVERRIDE_SECURITY.sql,T_PPA_OVERRIDE_SECURITY_EXPIRY.sql,T_PPA_MASTER_SECURITY.sql" `
     -CleanupSqlFiles "Cleanup.sql" `

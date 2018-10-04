@@ -16,7 +16,7 @@ Other features:
 
 ## Getting Started
 
-1. Run the scripts in the [DB directory](https://github.com/HexisData/hqTestLite/tree/parametric/DB) in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code. Note that the Dump_Data stored procedure will be called by most of your test result scripts, so be sure to propagate any changes there as well!
+1. Run the scripts in the [DB directory](https://github.com/HexisData/hqTestLite/tree/parametric/DB) in the test order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code. Note that the Dump_Data stored procedure will be called by most of your test result scripts, so be sure to propagate any changes there as well!
 
 1. Copy the [Test directory](https://github.com/HexisData/hqTestLite/tree/parametric/Test) into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
 
@@ -361,3 +361,6 @@ Publish-Results `
 #### Returns
 
 A string value containing the path to the report file.
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbLTM2NDM2OTg3Ml19
+-->

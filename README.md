@@ -20,7 +20,7 @@ Other features:
 
 1. Copy the [Test directory](https://github.com/HexisData/hqTestLite/tree/parametric/Test) into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
 
-1. From the [Local directory](https://github.com/HexisData/hqTestLite/tree/parametric/Local), copy the hqTestLite folder into the root of your C: drive. THIS IS IMPORTANT! Your test scripts will be looking for the **config.ps1** configuration script in this directory, and it must be in the same local location for each user!
+1. From the [Local directory](https://github.com/HexisData/hqTestLite/tree/parametric/Local), copy the hqTestLite folder into the root of your C: drive. THIS IS IMPORTANT! Your test scripts will be looking for the *config.ps1* configuration script in this directory, and it must be in the same local location for each user!
 
 ### Local Execution Policy
 
@@ -362,5 +362,5 @@ Publish-Results `
 
 A string value containing the path to the report file.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbOTg0MzgzNTgwLC0xMjY4NDUzNTc0XX0=
+eyJoaXN0b3J5IjpbMTIzNzYwNzY0OCwtMTI2ODQ1MzU3NF19
 -->

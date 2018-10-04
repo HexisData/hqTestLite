@@ -10,8 +10,8 @@ Other features:
 
 * Tests are expressed as short PowerShell scripts, which live in your version control repository and travel with your code. 
 * Tests can be shared and executed across an entire development team and in multiple environments.
-* Test results are output as simple text files. Once a test result is *certified*, any diff against the certified result indicates a test failure.
-* Test failure optionally invokes a text comparison engine (WinMerge, by default) to visualize the diff as a VERY useful troubleshooting aid.
+* Test results are output as simple text files. Once a test result is *certified*, any difference against the certified result indicates a test failure.
+* Test failure optionally invokes a text comparison engine ([WinMerge](http://winmerge.org/), by default) to visualize the diff as a *very* useful troubleshooting aid.
 * Tests can be invoked from other scripts and test results can be piped to other processes to support automated regression testing and continuous delivery.
 
 ## Getting Started
@@ -362,5 +362,5 @@ Publish-Results `
 
 A string value containing the path to the report file.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTc0MzE5OTc2OCwtMTI2ODQ1MzU3NF19
+eyJoaXN0b3J5IjpbOTg0MzgzNTgwLC0xMjY4NDUzNTc0XX0=
 -->

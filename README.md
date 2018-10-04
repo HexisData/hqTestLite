@@ -1,8 +1,8 @@
 # hqTestLite
 
-**hqTestLite** is an open-source, PowerShell-based testing framework. It is designed to automate the testing of complex systems (like Enterprise Data Management systems) that normally resist efficient test automation.
+**hqTestLite** is an open-source, PowerShell-based testing framework. It is designed to automate the testing of complex systems (like [Enterprise Data Management](https://en.wikipedia.org/wiki/Enterprise_data_management) systems) that normally resist efficient test automation.
 
-hqTestLite currently supports the [Markit Enterprise Data Management](https://ihsmarkit.com/products/edm.html) platform, but can easily be adapted to support testing of any platform of any kind that meets the following prerequisites:
+**hqTestLite** currently supports the [Markit Enterprise Data Management](https://ihsmarkit.com/products/edm.html) platform, but can easily be adapted to support testing of any platform of any kind that meets the following prerequisites:
   * It can be invoked from the Windows command line.
   * It can be induced to produce test output either via a text file or a query against a SQL Server database.
 
@@ -362,5 +362,5 @@ Publish-Results `
 
 A string value containing the path to the report file.
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbOTQwNzU2MDI2LC0xMjY4NDUzNTc0XX0=
+eyJoaXN0b3J5IjpbLTc0MzE5OTc2OCwtMTI2ODQ1MzU3NF19
 -->

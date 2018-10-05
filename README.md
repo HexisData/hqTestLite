@@ -128,6 +128,13 @@ $Global:DefaultMedmDbName = "MarkitEDM_TMP"
 
 Executes an ordered list of SQL scripts located in the same directory. Optionally collects their outputs into a text file.
 
+If a file in the list has a .CSV extension, then it will be executed as a set of INSERT statements with the following characteristics:
+
+* The table name will be the file name, excluding the CSV extension. If the table is in a non-default schema, add the schema name to the file name, like this: `myschema.MYTABLE.csv`.
+* The column names will be drawn from the first row of the CSV file. Column names will be enclosed in square brackets, so odd column names are still valid.
+* All values will be inserted as text, with any single quotes escaped. The system relies on implicit conversion to the table column's native type.
+* The system performs no checking around nonexistent column names, invalid types, primary key collisions, etc. Any of these will produce a SQL error. *Caveat emptor.*
+
 #### Syntax
 ```powershell
 Invoke-SqlScripts `
@@ -156,7 +163,7 @@ Ex: `-SqlDir "./ResultSql"`
 
 -SqlFiles
 : Required. A comma-delimited list of SQL script files to be executed. All files must be located within the directory indicated by `-SqlDir`. 
-Ex: `-SqlFiles "T_PREMASTER_SEC.sql,T_MASTER_SEC.sql"`
+Ex: `-SqlFiles "T_PREMASTER_SEC.sql,T_MASTER_SEC.csv"`
 
 -OutputPath
 : Optional. If set, indicates the single text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. 

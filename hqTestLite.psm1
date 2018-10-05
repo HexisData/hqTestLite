@@ -47,17 +47,36 @@ function Invoke-SqlScripts {
         $SqlFiles.Split(",") | ForEach {
             $SqlPath = Join-Path -Path $SqlDir -ChildPath $_
             if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
-                if ($OutputPath) { 
-                    "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
-					if ($OutputTable) {
-						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
-					}
-					else {
-						Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
-					}
+                $Extension = (Get-Item $SqlPath).Extension
+                if ($Extension.ToLower() -eq ".csv") {
+                    $TableName = (Get-Item $SqlPath).BaseName
+                    $Csv = Import-Csv -Path $SqlPath
+                    $Columns = $Csv[0].psobject.Properties.Name 
+                    $ColumnList = "[" + ($Columns -join "], [") + "]"
+
+                    $Sql = ""
+                    $Csv | foreach {
+                        $Values = $_.psobject.Properties.Value
+                        $ValueList = "'" + (($Values -replace "'", "''") -join "', '") + "'"
+
+                        $Sql += "INSERT dbo.Test ({0}) VALUES ({1});`n" -f $ColumnList, $ValueList
+                    }
+
+                    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql
                 }
-                else { 
-                    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 
+                else {
+                    if ($OutputPath) { 
+                        "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
+					    if ($OutputTable) {
+						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+					    }
+					    else {
+						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+					    }
+                    }
+                    else { 
+                        Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 
+                    }
                 }
             }
         }

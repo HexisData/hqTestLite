@@ -1,2 +1,2 @@
-﻿$Global:DefaultMedmDbServer = "markitedmdevdb.eatonvance.com"
-$Global:DefaultMedmDbName = "MarkitEDM"
+﻿$Global:DefaultMedmDbServer = "MyServerName"
+$Global:DefaultMedmDbName = "MyDbName"

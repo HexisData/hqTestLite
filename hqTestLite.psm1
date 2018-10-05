@@ -1,6 +1,6 @@
 $Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe"
-$Global:DefaultMedmDbServer = "markitedmdevdb.eatonvance.com"
-$Global:DefaultMedmDbName = "MarkitEDM"
+$Global:DefaultMedmDbServer = "MyDbServer"
+$Global:DefaultMedmDbName = "MyDbName"
 $Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe"
 $Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}")
 $Global:DefaultSuppressTextDiffPopup = $false

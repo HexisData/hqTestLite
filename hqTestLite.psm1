@@ -49,6 +49,7 @@ function Invoke-SqlScripts {
             if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
                 $Extension = (Get-Item $SqlPath).Extension
                 if ($Extension.ToLower() -eq ".csv") {
+                    $ScriptType = "CSV File"
                     $TableName = (Get-Item $SqlPath).BaseName
                     $Csv = Import-Csv -Path $SqlPath
                     $Columns = $Csv[0].psobject.Properties.Name 
@@ -59,7 +60,7 @@ function Invoke-SqlScripts {
                         $Values = $_.psobject.Properties.Value
                         $ValueList = "'" + (($Values -replace "'", "''") -join "', '") + "'"
 
-                        $Sql += "INSERT dbo.Test ({0}) VALUES ({1});`n" -f $ColumnList, $ValueList
+                        $Sql += "INSERT {0} ({1}) VALUES ({2});`n" -f $TableName, $ColumnList, $ValueList
                     }
 
                     Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql

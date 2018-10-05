@@ -80,24 +80,6 @@ $Global:DefaultMedmDbServer = "<MEDM DB Server>"
 $Global:DefaultMedmDbName = "<MEDM DB Name>"
 ```
 
-## Usage
-**hqTestLite** currently supports the Markit EDM (MEDM) data management platform. 
-
-### Test-MedmComponent and Test-MedmSolution
-In this free, open source edition of hqTest, a test is expressed as a short PowerShell script that invokes the *Test-MedmSolution* or *Test-MedmComponent* cmdlet. This cmdlet performs the following tasks:
-
-1. Optionally executes one or more SQL setup scripts against the target DB. Normally this step will be used to stage test data in cases where the process under test is consuming data in DB tables instead of a file.
-1. Executes the target MEDM Solution with specified parameters.
-1. Executes one or more result scripts against the target DB. Each script should produce a single rowset, so if more than one table must be evaluated there should be a result script for each. Result scripts are completely free form; any logic is valid so long as it produces a single rowset. Result scripts should be articulated in such as fashion as to produce a consistent result run over run, so they should leave out RunIds, update dates, and other data elements that change from one run to the next (unless the script logic normalizes them so they don't). All result script output is combined into a test result file.
-1. Optionally executes one or more cleanup scripts, normally intended to restore the database to its pre-test state.
-1. Optionally launches BeyondCompare to display the difference between the current test result file and some designated, previously certified test result file.
-
-A typical test script will look something like this (see [SampleTest.ps1](example/SampleTest.ps1)):
-
-### Publish-Results
-
-For test automation and continuous integration scenarios, the *Publish-Results* will publish the test results in a standard test reporting format. Currently JUnit is the only supported format. For an example of *Publish-Results*, see [ReportTestResults.ps1](example/ReportTestResults.ps1).
-
 ## Key Files & Directories
 
 **cert.ps1** &ndash; Target of the CERTIFY shortcut. Copies file *abc.xyz* to file *abc.certfied.xyz*.

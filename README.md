@@ -130,7 +130,7 @@ $Global:DefaultMedmDbName = "MarkitEDM_TMP"
 ### Global Variable Reference
 
 | Variable | Description | Default Value
-|--|--|--|
+|:--|:--|:--|
 | DefaultMedmProcessAgentPath | The local path to the MEDM Process Agent executable. This path will vary based on the MEDM version in use. Should be consistent across the team. | `"C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe"`
 | DefaultMedmDbServer | The SQL Server of the MEDM environment against which the test will execute. | `"markitedmdevdb.eatonvance.com"`
 | DefaultMedmDbName | The SQL Server database name of the MEDM environment against which the test will execute. | `"MarkitEDM"`
@@ -444,3 +444,41 @@ Ex: `-ReportFormat "JUnit"`
 #### Returns
 
 A string value containing the path to the report file.
+
+## Database Objects
+
+The DB directory contains a number of database objects intended to assist in the extraction of test results.
+
+### dbo.UDF_PPA_Core_Rows
+
+This table-valued function generates a sequence of integers as a one-column rowset.
+
+| Parameter | Data Type | Description
+|--|:--:|:--|
+| @n | int | Number of rows to generate.
+
+### dbo.UDF_PPA_Core_Split_Delimiter
+
+This table-valued function splits a delimited string into a rowset.
+
+| Parameter | Data Type | Description
+|--|:--:|:--|
+| @String | nvarchar(max) | Delimited string.
+| @Delimiter| nvarchar(255) | String delimiter.
+
+### dbo.USP_PPA_Core_DumpData
+
+This stored procedure dynamically selects data from a table or a view. It is the primary method of extracting test result data from the database. Omitted parameters will acquire their default values.
+
+| Parameter | Data Type | Default Value | Description
+|--|:--:|:--|:--|
+| @TableSchema| nvarchar(128) | 'dbo' | Optional. Schema of object to be queried.
+| @TableName| nvarchar(128) | | Required. Name of object to be queried. Can be either a table or a view.
+| @ColumnAction| char(1), 'I' or 'E' | 'E' | Optional. Specifies whether columns matching the patterns expressed in @ColumnList should be [I]ncluded or [E]xcluded.
+| @ColumnList | nvarchar(max) | '%RunId,CADIS\\\_SYSTEM\\\_%' | Optional. Comma-delimited list of LIKE-syntax patterns that specify columns to be included or excluded form the query. Escape special characters with a '\\'.
+| @Where| nvarchar(max) | NULL | Optional. Logical expression that will be applied to the query in a WHERE clause.
+| @OrderBy| nvarchar(max) | NULL | Optional. Column list that will be applied to the query in an ORDER BY clause.
+
+
+
+

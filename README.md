@@ -19,17 +19,17 @@ First thing is to get hqTestLite installed. If it is already in use in your orga
 
 1. Clone this repository into a shared directory that is accessible to your whole development team.
 1. Run the scripts in the [*DB*](https://github.com/HexisData/hqTestLite/tree/parametric/DB) directory in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code. Note that the *Dump_Data* stored procedure will be called by most of your test result scripts, so be sure to propagate any changes there as well!
-2. Copy the [*Test*](https://github.com/HexisData/hqTestLite/tree/parametric/Test) directory into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
-3. From the [*Local*](https://github.com/HexisData/hqTestLite/tree/parametric/Local) directory, copy the *hqTestLite* folder into the root of your C: drive. *This is important!* Your test scripts will be looking for the *config.ps1* configuration script in this directory, and it must be in the same local location for each user!
+1. Copy the [*Test*](https://github.com/HexisData/hqTestLite/tree/parametric/Test) directory into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
+1. From the [*Local*](https://github.com/HexisData/hqTestLite/tree/parametric/Local) directory, copy the *hqTestLite* folder into the root of your C: drive. *This is important!* Your test scripts will be looking for the *config.ps1* configuration script in this directory, and it must be in the same local location for each user!
 
 Now you are ready to run a test.
 
-4. Clone a code repository containing tests to your local machine and find the *Test* directory. Navigate into one of the test folders and open a test script: it should be obvious what is going to be tested. Now right-click on the test script file and select *Run with  PowerShell*. 
-5. Once text execution completes, find file *Result.txt* in the test directory. Open the file and scrutinize the test result. Is it what it should be?
-6. If the test result is correct, open the main **hqTestLite** repository and drag and drop your *Result.txt* file onto the *CERTIFY* shortcut you find there. The invoked PowerShell script will copy your *Result.txt* file into *Result.certified.txt* in the same location. 
-7. Now make a code change to the process under test and run the test again. If the newly generated *Result.txt* file differs from the certified version in any way, an instance of WinMerge will open, displaying the files side-by-side, so you can visualize the diff and zero in on precisely what broke.
-8. If the code change and new result are desirable, certify the new results file. This becomes the baseline for future tests.
-9. Check any changes into your version control system so that the next developer to exercise this code can stand on your shoulders!
+1. Clone a code repository containing tests to your local machine and find the *Test* directory. Navigate into one of the test folders and open a test script: it should be obvious what is going to be tested. Now right-click on the test script file and select *Run with  PowerShell*. 
+1. Once text execution completes, find file *Result.txt* in the test directory. Open the file and scrutinize the test result. Is it what it should be?
+1. If the test result is correct, open the main **hqTestLite** repository and drag and drop your *Result.txt* file onto the *CERTIFY* shortcut you find there. The invoked PowerShell script will copy your *Result.txt* file into *Result.certified.txt* in the same location. 
+1. Now make a code change to the process under test and run the test again. If the newly generated *Result.txt* file differs from the certified version in any way, an instance of WinMerge will open, displaying the files side-by-side, so you can visualize the diff and zero in on precisely what broke.
+1. If the code change and new result are desirable, certify the new results file. This becomes the baseline for future tests.
+1. Check any changes into your version control system so that the next developer to exercise this code can stand on your shoulders!
 
 If you run into any issues the first time through, see the sections below. 
 

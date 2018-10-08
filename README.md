@@ -17,7 +17,27 @@ Other features:
 
 # Table of Contents
 
-[TOC]
+- [Getting Started](#getting-started)
+  * [Local Execution Policy](#local-execution-policy)
+  * [SQL Server Module](#sql-server-module)
+  * [Markit EDM](#markit-edm)
+  * [WinMerge](#winmerge)
+  * [Changing Environments](#changing-environments)
+- [Key Files & Directories](#key-files---directories)
+- [Global Variables](#global-variables)
+  * [Global Variable Reference](#global-variable-reference)
+- [Cmdlets](#cmdlets)
+  * [Import-CsvTable](#import-csvtable)
+  * [Invoke-SqlScripts](#invoke-sqlscripts)
+  * [Invoke-MedmComponent](#invoke-medmcomponent)
+  * [Confirm-File](#confirm-file)
+  * [Test-MedmComponent](#test-medmcomponent)
+  * [Publish-Results](#publish-results)
+- [Database Objects](#database-objects)
+  * [dbo.UDF_PPA_Core_Rows](#dboudf-ppa-core-rows)
+  * [dbo.UDF_PPA_Core_Split_Delimiter](#dboudf-ppa-core-split-delimiter)
+  * [dbo.USP_PPA_Core_DumpData](#dbousp-ppa-core-dumpdata)
+
 
 # Getting Started
 

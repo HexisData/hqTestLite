@@ -138,8 +138,8 @@ If a file in the list has a .CSV extension, then it will be executed as a set of
 #### Syntax
 ```powershell
 Invoke-SqlScripts `
-    -DbServer <string> `
-    -DbName <string> `
+    [-DbServer <string>] `
+    [-DbName <string>] `
     [-SqlDir <string>] `
     -SqlFiles <string> `
     [-OutputPath <string>] `
@@ -150,7 +150,7 @@ Invoke-SqlScripts `
 #### Parameters
 
 -DbServer
-: Required. The target SQL Server database server address. 
+: Optional. The target SQL Server database server address. 
 Ex: `-DbServer "markitedmdevdb.eatonvance.com"`
 
 -DbName
@@ -471,3 +471,6 @@ This stored procedure dynamically selects data from a table or a view. It is the
 
 
 
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbMjA1MDA2NzQyOF19
+-->

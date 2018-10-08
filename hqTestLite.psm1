@@ -16,6 +16,34 @@ if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
 	Pop-Location # get back to the current location, counteracting the side effect of importing SQLPS	
 }
 
+function Import-CsvTable {
+    [CmdletBinding(SupportsShouldProcess = $True)]
+
+    Param(
+        [string]$DbServer = $Global:DefaultMedmDbServer,
+
+        [string]$DbName = $Global:DefaultMedmDbServer,
+
+        [Parameter(Mandatory = $True)]
+        [string]$CsvPath
+    )
+    
+    $TableName = (Get-Item $CsvPath).BaseName
+    $Csv = Import-Csv -Path $CsvPath
+    $Columns = $Csv[0].psobject.Properties.Name 
+    $ColumnList = "[" + ($Columns -join "], [") + "]"
+
+    $Sql = ""
+    $Csv | foreach {
+        $Values = $_.psobject.Properties.Value
+        $ValueList = "'" + (($Values -replace "'", "''") -join "', '") + "'"
+
+        $Sql += "INSERT {0} ({1}) VALUES ({2});`n" -f $TableName, $ColumnList, $ValueList
+    }
+
+    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql
+}
+
 function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
@@ -48,20 +76,8 @@ function Invoke-SqlScripts {
                 $Extension = (Get-Item $SqlPath).Extension
                 if ($Extension.ToLower() -eq ".csv") {
                     $ScriptType = "CSV File"
-                    $TableName = (Get-Item $SqlPath).BaseName
-                    $Csv = Import-Csv -Path $SqlPath
-                    $Columns = $Csv[0].psobject.Properties.Name 
-                    $ColumnList = "[" + ($Columns -join "], [") + "]"
 
-                    $Sql = ""
-                    $Csv | foreach {
-                        $Values = $_.psobject.Properties.Value
-                        $ValueList = "'" + (($Values -replace "'", "''") -join "', '") + "'"
-
-                        $Sql += "INSERT {0} ({1}) VALUES ({2});`n" -f $TableName, $ColumnList, $ValueList
-                    }
-
-                    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql
+                    Import-CsvTable -DbServer $DbServer -DbName $DbName -CsvPath $SqlPath
                 }
                 else {
                     if ($OutputPath) { 

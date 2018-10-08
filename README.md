@@ -150,11 +150,11 @@ Invoke-SqlScripts `
 #### Parameters
 
 -DbServer
-: Optional. The target SQL Server database server address. 
+: Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.
 Ex: `-DbServer "markitedmdevdb.eatonvance.com"`
 
 -DbName
-: Required. The target SQL Server database name. 
+: Required. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.
 Ex: `-DbName "MyDb"`
 
 -SqlDir
@@ -472,5 +472,5 @@ This stored procedure dynamically selects data from a table or a view. It is the
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMjA1MDA2NzQyOF19
+eyJoaXN0b3J5IjpbLTk0MTQ5Mjg1MF19
 -->

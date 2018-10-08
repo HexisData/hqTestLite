@@ -284,7 +284,7 @@ Tests a Markit EDM component by performing the following actions:
 **Syntax**
 
 ```powershell
-Test-MedmSolution `
+Test-MedmComponent `
     [-ProcessAgentPath <string>] `
     [-DbServer <string>] `
     [-DbName <string>] `
@@ -301,8 +301,8 @@ Test-MedmSolution `
     [-TestResultPath <string>] `
     [-CertifiedResultPath <string>] `
     [-SuppressDiffToolPopup] `
-	[-TextDiffExe <string>] `
-	[-TextDiffParams <string[]>] `
+    [-TextDiffExe <string>] `
+    [-TextDiffParams <string[]>] `
     [-TestName <string>]
 ```
 

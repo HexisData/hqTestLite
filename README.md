@@ -17,7 +17,31 @@ Other features:
 
 # Table of Contents
 
-TODO
+- [Getting Started](#getting-started)
+  * [Local Execution Policy](#local-execution-policy)
+  * [SQL Server Module](#sql-server-module)
+  * [Markit EDM](#markit-edm)
+  * [WinMerge](#winmerge)
+  * [Changing Environments](#changing-environments)
+- [Key Files and Directories](#key-files-and-directories)
+- [Global Variables](#global-variables)
+  * [Global Variable Reference](#global-variable-reference)
+- [Cmdlets](#cmdlets)
+  * [Export-CsvTestData](#export-csvtestdata)
+  * [Import-CsvTable](#import-csvtable)
+  * [Invoke-SqlScripts](#invoke-sqlscripts)
+  * [Invoke-MedmComponent](#invoke-medmcomponent)
+  * [Confirm-File](#confirm-file)
+  * [Test-MedmComponent](#test-medmcomponent)
+  * [Publish-Results](#publish-results)
+  * [Read-UserEntry](#read-userentry)
+- [Scripts](#scripts)
+  * [cert.ps1](#certps1)
+  * [GenerateTestData.ps1](#generatetestdataps1)
+- [Database Objects](#database-objects)
+  * [dbo.UDF_PPA_Core_Rows](#dboudf-ppa-core-rows)
+  * [dbo.UDF_PPA_Core_Split_Delimiter](#dboudf-ppa-core-split-delimiter)
+  * [dbo.USP_PPA_Core_DumpData](#dbousp-ppa-core-dumpdata)
 
 # Getting Started
 
@@ -136,6 +160,10 @@ $Global:DefaultMedmDbName = "MarkitEDM_TMP"
 
 Generates a CSV file of random test data matching the schema of a designated database table.
 
+Columns may be included or excluded based on a regex pattern. Values may be constrained into ranges by type.
+
+Character data will be generated as random sequences of capital letters, to the column length limit or to the value of *-MaxStrLen*, whichever is smaller.
+
 **Syntax**
 
 ```powershell
@@ -163,19 +191,19 @@ Export-CsvTestData `
 | --------- | ------------------------------------------------------------ |
 | -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "MyDbServer"` |
 | -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
-| -TableSchema | Optional. Schema of the target database table. Defaults to "dbo".<br /><br />Ex: TODO |
-| -TableName | Required. Target database table name.<br /><br />Ex: TODO |
-| -ColNameAction | Optional. Indicates whether *-ColNamePattern* will be used to include or exclude columns. Defaults to *Exclude*.<br /><br />Ex: TODO |
-| -ColNamePattern | Optional. Regex pattern of column names to include or exclude. Defaults to "^CADIS_SYSTEM_\|.\*RUN_?ID".<br /><br />Ex: TODO |
+| -TableSchema | Optional. Schema of the target database table. Defaults to "dbo".<br /><br />Ex: `-TableSchema "dbo"` |
+| -TableName | Required. Target database table name.<br /><br />Ex: `-TableName "T_MASTER_SEC"` |
+| -ColNameAction | Optional. Indicates whether *-ColNamePattern* will be used to include or exclude columns. Defaults to *Exclude*.<br /><br />Ex: `-ColNameAction Exclude` |
+| -ColNamePattern | Optional. Regex pattern of column names to include or exclude. Defaults to "^CADIS_SYSTEM\_\|.\*RUN\_?ID".<br /><br />Ex: `-ColNamePattern "^CADIS_SYSTEM\_.\*RUN\_?ID"` |
 | -CsvPath  | Required. The path to the CSV file to be generated. Relative paths will be resolved relative to the script execution patrh.<br /><br />Ex: `-CsvPath "./SetupSql/T_MASTER_SEC.csv"` |
-| -RowCount | TODO |
-| -MinDate | TODO |
-| -MaxDate | TODO |
-| -MinDec | TODO |
-| -MaxDec | TODO |
-| -MinInt | TODO |
-| -MaxInt | TODO |
-| -MaxStrLen | TODO |
+| -RowCount | Optional. Number of rows of test data to generate. Defaults to 10.<br /><br />Ex: `-RowCount 10` |
+| -MinDate | Optional. Minimum value for randomly generated date-type values. Defaults to 2018-01-01T00:00:00.<br /><br />Ex: `-MinDate [datetime]::ParseExact("2018-01-01", "yyyy-MM-dd", $null)` |
+| -MaxDate | Optional. Maximum value for randomly generated date-type values. Defaults to 2028-01-01T00:00:00.<br /><br />Ex: `-MaxDate [datetime]::ParseExact("2028-01-01", "yyyy-MM-dd", $null)` |
+| -MinDec | Optional. Minimum value for randomly generated decimal-type values. Defaults to 0.0.<br /><br />Ex: `-MinDec 0.0` |
+| -MaxDec | Optional. Maximum value for randomly generated decimal-type values. Defaults to 10.0.<br /><br />Ex: `-MaxDec 10.0` |
+| -MinInt | Optional. Minimum value for randomly generated integer-type values. Defaults to 0.<br /><br />Ex: `-MinInt 0.0` |
+| -MaxInt | Optional. Maximum value for randomly generated integer-type values. Defaults to 10.<br /><br />Ex: `-MaxInt 10.0` |
+| -MaxStrLen | Optional. Maximum length of generated character strings. Defaults to 32.<br /><br />Ex: `-MaxStrLen 32` |
 
 ## Import-CsvTable
 
@@ -392,9 +420,41 @@ Publish-Results `
 
 A string value containing the path to the report file.
 
+## Read-UserEntry
+
+This is a utility cmdlet that captures input from the user and validates it against a regex pattern. If a default value is provided, the user can accept it by pressing Enter.
+
+**Syntax**
+
+```powershell
+Read-UserEntry `
+	-Label <string> `
+	[-Default <string>] `
+	[-Pattern <string>]
+```
+
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -Label | Required. Identifies the data being captured to the user.<br /><br />Ex: `-Label "Height Above Sea Level"` |
+| -Default | Optional. Default value, which the user can accept by pressing the Enter key.<br /><br />Ex: `-Default "0"` |
+| -Pattern | Optional. Regex pattern against user input will be evaluated. Defaults to ".\*" <br /><br />Ex: `-Pattern "\d+"` |
+
+
 # Scripts
 
-TODO
+The hqTestLite repository contains a number of scripts that provide utility functions or leverage the module in useful ways.
+
+## cert.ps1
+
+This script powers the CERTIFY shortcut in the main directory of the repository. When a user drops a file onto this shortcut, the *cert.ps1* creates a copy of the file in the same location, with ".certified" inserted at the end of the file name and before the extension.
+
+For example, *Result.txt* would generate *Result.certified.txt*.
+
+## GenerateTestData.ps1
+
+This script generates a CSV of test data based on a database table schema, with an interactive user experience. The script leverages cmdlets *Read-UserEntry* and *Export-CsvTestData*.
 
 # Database Objects
 

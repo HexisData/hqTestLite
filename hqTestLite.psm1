@@ -7,6 +7,14 @@ $Global:DefaultSuppressTextDiffPopup = $false
 $Global:DefaultSqlScriptType = "Sql Script"
 $Global:DefaultReportFolder = "C:\hqTestLite\Results"
 
+Add-Type -TypeDefinition @"
+   public enum PatternAction
+   {
+      Include,
+      Exclude
+   }
+"@
+
 Push-Location
 
 if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
@@ -83,7 +91,7 @@ function Invoke-SqlScripts {
                     if ($OutputPath) { 
                         "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
 					    if ($OutputTable) {
-						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath  Out-File -FilePath $OutputPath -Append
 					    }
 					    else {
 						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
@@ -218,6 +226,7 @@ function Confirm-File {
 
 function Test-MedmComponent {
     [CmdletBinding(SupportsShouldProcess = $True)]
+
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
 
@@ -394,10 +403,86 @@ function Publish-Results {
 	}
 }
 
-<#
-.SYNOPSIS
-Duplicates functionality of $PSScriptPath to support earlier versions of PowerShell
-#>
+function Export-CsvTestData {
+	Param(
+        [string]$DbServer = $Global:DefaultMedmDbServer,
+        
+        [string]$DbName = $Global:DefaultMedmDbName,
+        
+        [string]$TableSchema = "dbo",
+        
+		[Parameter(Mandatory = $True)]
+        [string]$TableName,
+
+        [PatternAction]$ColNameAction = [PatternAction]::Exclude,
+        
+        [string]$ColNamePattern = "^CADIS_SYSTEM_|.*RUN_?ID",
+
+        [Parameter(Mandatory = $True)]
+        [string]$CsvPath,
+
+        [int]$RowCount = 10,
+
+        [datetime]$MinDate = [datetime]::ParseExact("2018-01-01", "yyyy-MM-dd", $null),
+
+        [datetime]$MaxDate = [datetime]::ParseExact("2027-12-31", "yyyy-MM-dd", $null),
+
+        [decimal]$MinDec = 0.0,
+
+        [decimal]$MaxDec = 10.0,
+
+        [int]$MinInt = 1000,
+
+        [int]$MaxInt = 9999,
+
+        [int]$MaxStrLen = 32
+	)
+
+    $Sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}'" -f $TableSchema, $TableName
+
+    $Columns = Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql
+    $Rows = @()
+
+    For ($i = 0; $i -lt $RowCount; $i++) {
+        $Row = New-Object –TypeName PSObject
+
+        $Columns | where { -not($_.COLUMN_NAME -match $ColNamePattern) }  | foreach {
+            $Column = $_
+
+            If (-not( `
+                (($ColNameAction -eq [PatternAction]::Exclude) -and -not($Column.COLUMN_NAME -match $ColNamePattern)) `
+                -or (($ColNameAction -eq [PatternAction]::Include) -and ($Column.COLUMN_NAME -match $ColNamePattern)) `
+            )) { continue }
+
+            switch -Regex ($Column.DATA_TYPE) {
+                "bit" { $Value = Get-Random -Minimum 0 -Maximum 2 }
+
+                ".*char" { 
+                    $StrLen = $(@($(If ($Column.CHARACTER_MAXIMUM_LENGTH -eq -1) { $MaxStrLen } Else { $Column.CHARACTER_MAXIMUM_LENGTH }), $MaxStrLen) | measure -Minimum).Minimum
+                    $Value = -join((65..90) <# + (97..122) #> | Get-Random -Count $StrLen | % {[char]$_}) 
+                }
+
+                "date.*|.*time2?" { 
+                    $Ticks = Get-Random -Minimum $MinDate.Ticks -Maximum ($MaxDate.Ticks + 1)
+                    $Value = New-Object DateTime($Ticks)
+                }
+
+                "decimal" { $Value = Get-Random -Minimum $MinDec -Maximum $MaxDec }
+
+                "int" { $Value = Get-Random -Minimum $MinInt -Maximum ($MaxInt + 1) }
+
+                default { $Value = $Column.DATA_TYPE }
+            }
+
+            $Row | Add-Member -MemberType NoteProperty -Name $_.COLUMN_NAME -Value $Value
+        }
+
+        $Rows += $Row
+    }
+
+    $Rows | Export-Csv -Path $CsvPath -Encoding Unicode -NoTypeInformation
+}
+
 function Get-ScriptDir
 {
     $path = Split-Path $script:MyInvocation.MyCommand.Path

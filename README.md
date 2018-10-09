@@ -17,27 +17,7 @@ Other features:
 
 # Table of Contents
 
-- [Getting Started](#getting-started)
-  * [Local Execution Policy](#local-execution-policy)
-  * [SQL Server Module](#sql-server-module)
-  * [Markit EDM](#markit-edm)
-  * [WinMerge](#winmerge)
-  * [Changing Environments](#changing-environments)
-- [Key Files & Directories](#key-files---directories)
-- [Global Variables](#global-variables)
-  * [Global Variable Reference](#global-variable-reference)
-- [Cmdlets](#cmdlets)
-  * [Import-CsvTable](#import-csvtable)
-  * [Invoke-SqlScripts](#invoke-sqlscripts)
-  * [Invoke-MedmComponent](#invoke-medmcomponent)
-  * [Confirm-File](#confirm-file)
-  * [Test-MedmComponent](#test-medmcomponent)
-  * [Publish-Results](#publish-results)
-- [Database Objects](#database-objects)
-  * [dbo.UDF_PPA_Core_Rows](#dboudf-ppa-core-rows)
-  * [dbo.UDF_PPA_Core_Split_Delimiter](#dboudf-ppa-core-split-delimiter)
-  * [dbo.USP_PPA_Core_DumpData](#dbousp-ppa-core-dumpdata)
-
+TODO
 
 # Getting Started
 
@@ -68,6 +48,8 @@ Set-ExecutionPolicy Unrestricted
 ```
 
 Click [here](https://www.mssqltips.com/sqlservertip/2702/setting-the-powershell-execution-policy) for more info on setting your local execution policy.
+
+Note also that there is also an issue around the network location from which a script is run. Scripts that are run from an internet location, as opposed to a LAN location, raise special alerts. If your network location can be expressed either way (i.e. `//paraport/resources/...` vs `//paraport.com/resources/...`, choose the LAN version to minimize security alerts.
 
 ## SQL Server Module
 
@@ -106,7 +88,7 @@ $Global:DefaultMedmDbServer = "<MEDM DB Server>"
 $Global:DefaultMedmDbName = "<MEDM DB Name>"
 ```
 
-# Key Files & Directories
+# Key Files and Directories
 
 **cert.ps1** &ndash; Target of the CERTIFY shortcut. Copies file *abc.xyz* to file *abc.certfied.xyz*.
 
@@ -150,6 +132,51 @@ $Global:DefaultMedmDbName = "MarkitEDM_TMP"
 
 # Cmdlets
 
+## Export-CsvTestData
+
+Generates a CSV file of random test data matching the schema of a designated database table.
+
+**Syntax**
+
+```powershell
+Export-CsvTestData `
+    [-DbServer <string>] `
+    [-DbName <string>] `
+    [-TableSchema <string>] `
+    -TableName <string> `
+    [-ColNameAction <Include|Exclude>] `
+    [-ColNamePattern <string>] `
+    -CsvPath <string>] `
+    [-RowCount <int>] `
+    [-MinDate <datetime>] `
+    [-MaxDate <datetime>] `
+    [-MinDec <decimal>] `
+    [-MaxDec <decimal>] `
+    [-MinInt <int>] `
+    [-MaxInt <int>] `
+    [-MaxStrLen <int>]
+```
+
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "MyDbServer"` |
+| -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
+| -TableSchema | Optional. Schema of the target database table. Defaults to "dbo".<br /><br />Ex: TODO |
+| -TableName | Required. Target database table name.<br /><br />Ex: TODO |
+| -ColNameAction | Optional. Indicates whether *-ColNamePattern* will be used to include or exclude columns. Defaults to *Exclude*.<br /><br />Ex: TODO |
+| -ColNamePattern | Optional. Regex pattern of column names to include or exclude. Defaults to "^CADIS_SYSTEM_\|.\*RUN_?ID".<br /><br />Ex: TODO |
+| -CsvPath  | Required. The path to the CSV file to be generated. Relative paths will be resolved relative to the script execution patrh.<br /><br />Ex: `-CsvPath "./SetupSql/T_MASTER_SEC.csv"` |
+| -RowCount | TODO |
+| -MinDate | TODO |
+| -MaxDate | TODO |
+| -MinDec | TODO |
+| -MaxDec | TODO |
+| -MinInt | TODO |
+| -MaxInt | TODO |
+| -MaxStrLen | TODO |
+
 ## Import-CsvTable
 
 Converts a CSV file into a set of SQL insert statements and executes them against a database as follows:
@@ -172,9 +199,9 @@ Import-CsvTable `
 
 | Parameter | Description                                                  |
 | --------- | ------------------------------------------------------------ |
-| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "MyDbServer"` |
 | -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
-| -CsvPath   | Required. The path to the CSV file to be loaded. Relative paths will be resolved relative to the script execution patrh.<br /><br />Ex: `-CsvPath "./SetupSql/T_MASTER_SEC.csv"` |
+| -CsvPath  | Required. The path to the CSV file to be loaded. Relative paths will be resolved relative to the script execution patrh.<br /><br />Ex: `-CsvPath "./SetupSql/T_MASTER_SEC.csv"` |
 
 ## Invoke-SqlScripts
 
@@ -364,6 +391,10 @@ Publish-Results `
 **Returns**
 
 A string value containing the path to the report file.
+
+# Scripts
+
+TODO
 
 # Database Objects
 

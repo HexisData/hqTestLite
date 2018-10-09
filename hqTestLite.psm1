@@ -21,7 +21,7 @@ if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
 	Write-Host 'Invoke-Sqlcmd not loaded: loading SqlServer to fix'
 	Push-Location # save the current location
 	$dummy = Install-Module -Name SqlServer -ErrorAction Stop # Importing this module forces the location to a SqlServer prompt
-	Pop-Location # get back to the current location, counteracting the side effect of importing SQLPS	
+	Pop-Location # get back to the current location, counteracting the side effect of importing SqlServer	
 }
 
 function Import-CsvTable {
@@ -483,10 +483,37 @@ function Export-CsvTestData {
     $Rows | Export-Csv -Path $CsvPath -Encoding Unicode -NoTypeInformation
 }
 
-function Get-ScriptDir
-{
-    $path = Split-Path $script:MyInvocation.MyCommand.Path
-    return "$path\"
+
+function Read-UserEntry {
+    Param(
+        [Parameter(Mandatory = $True)]
+        [string]$Label,
+
+        [string]$Default,
+
+        [string]$Pattern = ".+"
+    )
+
+    while (!$Result) {
+        Write-Host ("`n" + $Label.ToUpper())
+        Write-Host "Pattern: $Pattern"
+        If ($Default) { 
+            Write-Host "Default: $Default"
+            If (($Result = Read-Host "New value or Enter to accept default") -eq "") { $Result = $Default }
+        }
+        Else { $Result = Read-Host "Enter value" }
+
+        If ($Result -inotmatch $Pattern) {
+            Write-Host "Failed pattern match!" -ForegroundColor Magenta
+            $Result = $null
+            continue
+        }
+
+        Write-Host ($Label + ": ") -NoNewline
+        Write-Host $Result -ForegroundColor Yellow
+    }
+
+    return $Result
 }
 
 Pop-Location

@@ -63,6 +63,8 @@ Now you are ready to run a test.
 
 If you run into any issues the first time through, see the sections below. 
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## Local Execution Policy
 
 All **hqTestLite** tests are articulated as PowerShell scripts. The first time you run a PowerShell script on your machine, you may get an error indicating that the execution of scripts is disabled on your system. If this occurs, open a PowerShell command prompt *as administrator* and run the following command:
@@ -75,6 +77,8 @@ Click [here](https://www.mssqltips.com/sqlservertip/2702/setting-the-powershell-
 
 Note also that there is also an issue around the network location from which a script is run. Scripts that are run from an internet location, as opposed to a LAN location, raise special alerts. If your network location can be expressed either way (i.e. `//paraport/resources/...` vs `//paraport.com/resources/...`, choose the LAN version to minimize security alerts.
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## SQL Server Module
 
 The first time you execute a test, **hqTestLite** may attempt to download and install the *SqlServer* PowerShell module. If this occurs, you will see prompts requesting permission to run NuGet. Grant the requested permissions. 
@@ -85,6 +89,8 @@ If this process breaks and you see errors indicating that the module is not conn
 Install-Module -Name SqlServer
 ```
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## Markit EDM
 
 By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, please add the following line to your local *config.ps1* configuration script:
@@ -92,6 +98,8 @@ By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be inst
 ```powershell
 $Global:DefaultMedmProcessAgentPath = "<path to MEDM exe>\CadisProcessAgent.exe"
 ```
+
+[Back to Top](#welcome-to-hqtestlite)
 
 ## WinMerge
 
@@ -103,6 +111,8 @@ $Global:DefaultMedmProcessAgentPath = "<path to MEDM exe>\CadisProcessAgent.exe"
 $Global:DefaultTextDiffExe = "<path to WinMerge exe>\WinMergeU.exe"
 ```
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## Changing Environments
 
 By default, your tests will be executed against the DEV database. To execute in a different environment, edit the following lines in your local *config.ps1* configuration script:
@@ -112,7 +122,9 @@ $Global:DefaultMedmDbServer = "<MEDM DB Server>"
 $Global:DefaultMedmDbName = "<MEDM DB Name>"
 ```
 
-# Key Files and Directories
+[Back to Top](#welcome-to-hqtestlite)
+
+## Key Files and Directories
 
 **cert.ps1** &ndash; Target of the CERTIFY shortcut. Copies file *abc.xyz* to file *abc.certfied.xyz*.
 
@@ -130,7 +142,9 @@ $Global:DefaultMedmDbName = "<MEDM DB Name>"
   
 **Test directory** &ndash; Sample test repository. Copy this into source control and use it as a starting point.
 
-# Global Variables
+[Back to Top](#welcome-to-hqtestlite)
+
+## Global Variables
 
 The hqTestLite module creates a number of global variables, whose default values are set directly in *hqTestLite.psm1*. 
 
@@ -140,6 +154,8 @@ To override a global variable in your local environment, simply copy the variabl
 ```powershell
 $Global:DefaultMedmDbName = "MarkitEDM_TMP"
 ```
+
+[Back to Top](#welcome-to-hqtestlite)
 
 ## Global Variable Reference
 
@@ -154,7 +170,11 @@ $Global:DefaultMedmDbName = "MarkitEDM_TMP"
 | DefaultSqlScriptType | The script type token to use when `-Verbose` or `-WhatIf` are activated. Useful for troubleshooting. | `"Sql Script"` |
 | DefaultReportFolder | The default location where *Publish-Results* will place test results reports. | `"C:\hqTestLite\Results"` |
 
-# Cmdlets
+[Back to Top](#welcome-to-hqtestlite)
+
+## Cmdlets
+
+[Back to Top](#welcome-to-hqtestlite)
 
 ## Export-CsvTestData
 
@@ -205,6 +225,8 @@ Export-CsvTestData `
 | -MaxInt | Optional. Maximum value for randomly generated integer-type values. Defaults to 10.<br /><br />Ex: `-MaxInt 10.0` |
 | -MaxStrLen | Optional. Maximum length of generated character strings. Defaults to 32.<br /><br />Ex: `-MaxStrLen 32` |
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## Import-CsvTable
 
 Converts a CSV file into a set of SQL insert statements and executes them against a database as follows:
@@ -230,6 +252,8 @@ Import-CsvTable `
 | -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "MyDbServer"` |
 | -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
 | -CsvPath  | Required. The path to the CSV file to be loaded. Relative paths will be resolved relative to the script execution patrh.<br /><br />Ex: `-CsvPath "./SetupSql/T_MASTER_SEC.csv"` |
+
+[Back to Top](#welcome-to-hqtestlite)
 
 ## Invoke-SqlScripts
 
@@ -262,6 +286,7 @@ Invoke-SqlScripts `
 | -OutputTable | Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. <br /><br />Ex: `-OutputTable` |
 | -ScriptType | Optional. Differentiates different script types in conjunction with the `-Verbose` and `-WhatIf` switches. Defaults to the value of `$Global:DefaultSqlScriptType`. <br /><br />Ex: `-ScriptType "Sql Script"` |
 
+[Back to Top](#welcome-to-hqtestlite)
 
 ## Invoke-MedmComponent
 
@@ -297,6 +322,8 @@ Invoke-MedmComponent `
 | -CleanupSqlDir | Optional. A directory containing SQL scripts to be executed following component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-CleanupSqlDir ".\CleanupSql"` |
 | -CleanupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed following component invocation. All must be located within the directory indicated by `-CleanupSqlDir`. <br /><br />Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"` |
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## Confirm-File
 
 Performs file validation. Pops up the diff tool on completion, and writes out test results in JUnit format. *Confirm-File* is useful in the case where you have multiple files output by the process under test. You can call *Invoke-MedmComponent* and then call *Confirm-File* multiple times (once per file output from the process). 
@@ -323,6 +350,8 @@ Confirm-File `
 | -SuppressTextDiffPopup | Switch. If present, prevents the text comparison engine from being invoked in the event of a failed test. Useful for automated regression testing. Defaults to the value of `$Global:DefaultSuppressTextDiffPopup`.<br /><br />Ex: `-SuppressTextDiffPopup` |
 | -TextDiffExe | Optional. The local path to your text comparison engine's executable (WinMerge by default). Defaults to the value of `$Global:DefaultTextDiffExe`.<br /><br />Ex:`-TextDiffExe "C:\Program Files (x86)\WinMerge\WinMergeU.exe"` |
 | -TextDiffParams | Optional. An array of strings representing the text comparison engine's command-line parameters. Tokens `{CurrentResult}` and `{CertfiedResult}` will be replaced by the relevant file names. Defaults to the value of `$Global:DefaultTextDiffParams`. <br /><br />Ex: `-TextDiffParams @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}"`) |
+
+[Back to Top](#welcome-to-hqtestlite)
 
 ## Test-MedmComponent
 
@@ -394,6 +423,8 @@ An object with the following properties:
 * Time &ndash; The execution time of the Markit EDM Component being tested
 * Reason &ndash; if Status is `FAILED`, Reason will contain the diff results showing where the test result file is different from the certified file.
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## Publish-Results
 
 Produces a report showing pass/fail status of tests in a standard test results reporting format. Currently supports JUnit.
@@ -420,6 +451,8 @@ Publish-Results `
 
 A string value containing the path to the report file.
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## Read-UserEntry
 
 This is a utility cmdlet that captures input from the user and validates it against a regex pattern. If a default value is provided, the user can accept it by pressing Enter.
@@ -441,10 +474,13 @@ Read-UserEntry `
 | -Default | Optional. Default value, which the user can accept by pressing the Enter key.<br /><br />Ex: `-Default "0"` |
 | -Pattern | Optional. Regex pattern against user input will be evaluated. Defaults to ".\*" <br /><br />Ex: `-Pattern "\d+"` |
 
+[Back to Top](#welcome-to-hqtestlite)
 
-# Scripts
+## Scripts
 
 The hqTestLite repository contains a number of scripts that provide utility functions or leverage the module in useful ways.
+
+[Back to Top](#welcome-to-hqtestlite)
 
 ## cert.ps1
 
@@ -452,13 +488,19 @@ This script powers the CERTIFY shortcut in the main directory of the repository.
 
 For example, *Result.txt* would generate *Result.certified.txt*.
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## GenerateTestData.ps1
 
 This script generates a CSV of test data based on a database table schema, with an interactive user experience. The script leverages cmdlets *Read-UserEntry* and *Export-CsvTestData*.
 
-# Database Objects
+[Back to Top](#welcome-to-hqtestlite)
+
+## Database Objects
 
 The DB directory contains a number of database objects intended to assist in the extraction of test results.
+
+[Back to Top](#welcome-to-hqtestlite)
 
 ## dbo.UDF_PPA_Core_Rows
 
@@ -470,6 +512,8 @@ This table-valued function generates a sequence of integers as a one-column rows
 |--|:--:|:--|
 | @n | int | Number of rows to generate. |
 
+[Back to Top](#welcome-to-hqtestlite)
+
 ## dbo.UDF_PPA_Core_Split_Delimiter
 
 This table-valued function splits a delimited string into a rowset.
@@ -480,6 +524,8 @@ This table-valued function splits a delimited string into a rowset.
 |--|:--:|:--|
 | @String | nvarchar(max) | Delimited string. |
 | @Delimiter| nvarchar(255) | String delimiter. Multiple-character delimiters are allowed. |
+
+[Back to Top](#welcome-to-hqtestlite)
 
 ## dbo.USP_PPA_Core_DumpData
 
@@ -495,3 +541,7 @@ This stored procedure dynamically selects data from a table or a view. It is the
 | @ColumnList | nvarchar(max) | '%RunId,CADIS\\\_SYSTEM\\\_%' | Optional. Comma-delimited list of LIKE-syntax patterns that specify columns to be included or excluded form the query. Escape special characters with a '\\'. |
 | @Where| nvarchar(max) | NULL | Optional. Logical expression that will be applied to the query in a WHERE clause. |
 | @OrderBy| nvarchar(max) | NULL | Optional. Column list that will be applied to the query in an ORDER BY clause. |
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## 

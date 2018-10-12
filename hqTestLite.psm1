@@ -23,6 +23,49 @@ if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
 	Pop-Location # get back to the current location, counteracting the side effect of importing SqlServer	
 }
 
+
+function GetFiles {
+    Param(
+        [string]$Path = $pwd, 
+        [string[]]$Include, 
+        [string[]]$Exclude
+    ) 
+
+    $files = @()
+
+    foreach ($item in Get-ChildItem $Path)
+    {
+        if (Test-Path $item.FullName -PathType Container) 
+        {
+            GetFiles $item.FullName $include $exclude
+            continue
+        } 
+
+        $leaf = Split-Path $item -Leaf
+        if ($Include | Where { $leaf -inotmatch $_ }) { continue }
+        if ($Exclude | Where { $leaf -imatch $_ }) { continue }
+        
+        $files += $item.FullName 
+    } 
+
+    return $files
+}
+
+function Show-Execution {
+    Param(
+        [string]$Message = "",
+        [PSObject]$Result
+    )
+
+    If ($Message) { $Message | Out-Host }
+
+    If ($Result) { $Result | Out-Host }
+
+    If ($Global:NoInput) { return }
+
+    [void](Read-Host "Press Enter to continue") 
+}
+
 function Import-CsvTable {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
@@ -319,8 +362,6 @@ function Test-MedmComponent {
 		-TestName $TestName `
 		-TextDiffExe $TextDiffExe `
 		-TextDiffParams $TextDiffParams
-
-	Write-Host $result
 
 	return $result
 }

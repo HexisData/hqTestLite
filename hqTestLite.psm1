@@ -1,6 +1,5 @@
+$Global:DefaultLocalConfigPath = "C:\hqTestLite\local_config.ps1"
 $Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe"
-$Global:DefaultMedmDbServer = "MyDbServer"
-$Global:DefaultMedmDbName = "MyDbName"
 $Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe"
 $Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}")
 $Global:DefaultSuppressTextDiffPopup = $false
@@ -28,9 +27,9 @@ function Import-CsvTable {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
-        [string]$DbServer = $Global:DefaultMedmDbServer,
+        [string]$DbServer = $Global:EnvMedmDbServer,
 
-        [string]$DbName = $Global:DefaultMedmDbServer,
+        [string]$DbName = $Global:EnvMedmDbName,
 
         [Parameter(Mandatory = $True)]
         [string]$CsvPath
@@ -56,9 +55,9 @@ function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
-        [string]$DbServer = $Global:DefaultMedmDbServer,
+        [string]$DbServer = $Global:EnvMedmDbServer,
 
-        [string]$DbName = $Global:DefaultMedmDbServer,
+        [string]$DbName = $Global:EnvMedmDbServer,
 
         [string]$SqlDir = $null,
 
@@ -113,9 +112,9 @@ function Invoke-MedmComponent {
 	    Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
 
-        [string]$DbServer = $Global:DefaultMedmDbServer,
+        [string]$DbServer = $Global:EnvMedmDbServer,
 
-        [string]$DbName = $Global:DefaultMedmDbName,
+        [string]$DbName = $Global:EnvMedmDbName,
 
         [string]$SetupSqlDir = $null,
 
@@ -230,9 +229,9 @@ function Test-MedmComponent {
     Param(
         [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
 
-		[string]$DbServer = $Global:DefaultMedmDbServer,
+		[string]$DbServer = $Global:EnvMedmDbServer,
 
-		[string]$DbName = $Global:DefaultMedmDbName,
+		[string]$DbName = $Global:EnvMedmDbName,
 
 		[string]$SetupSqlDir = $null,
 
@@ -405,9 +404,9 @@ function Publish-Results {
 
 function Export-CsvTestData {
 	Param(
-        [string]$DbServer = $Global:DefaultMedmDbServer,
+        [string]$DbServer = $Global:EnvMedmDbServer,
         
-        [string]$DbName = $Global:DefaultMedmDbName,
+        [string]$DbName = $Global:EnvMedmDbName,
         
         [string]$TableSchema = "dbo",
         

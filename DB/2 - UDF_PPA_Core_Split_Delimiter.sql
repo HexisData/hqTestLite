@@ -4,7 +4,7 @@ SET ANSI_NULLS ON
 GO
 
 
-CREATE FUNCTION [hq].[tvf_Core_Split_Delimiter]
+CREATE FUNCTION dbo.[UDF_PPA_Core_Split_Delimiter]
 (
    @String NVARCHAR(MAX),
    @Delimiter NVARCHAR(255)
@@ -14,7 +14,7 @@ RETURN
 (
 	WITH Start(i) AS (
 		SELECT S.i + CASE S.i WHEN 1 THEN 0 ELSE DATALENGTH(@Delimiter) / 2 END 
-		FROM hq.tvf_Core_Rows(DATALENGTH(@String) / 2) S
+		FROM dbo.UDF_PPA_Core_Rows(DATALENGTH(@String) / 2) S
 		WHERE 
 			S.i = 1
 			OR (

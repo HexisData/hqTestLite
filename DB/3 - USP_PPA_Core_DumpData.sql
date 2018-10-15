@@ -3,11 +3,11 @@ GO
 SET ANSI_NULLS ON
 GO
 
-CREATE PROCEDURE [hq].[usp_Core_DumpData] 
+CREATE PROCEDURE dbo.[USP_PPA_Core_DumpData] 
 	@TableSchema nvarchar(128) = 'dbo',
 	@TableName nvarchar(128),
 	@ColumnAction CHAR(1) = 'E', -- [I]nclude | [E]xclude
-	@ColumnList nvarchar(max) = '%RunId,CADIS_SYSTEM_%',
+	@ColumnList nvarchar(max) = '%RunId,CADIS\_SYSTEM\_%',
 	@Where nvarchar(max) = NULL,
 	@OrderBy nvarchar(max) = NULL
 AS
@@ -25,7 +25,7 @@ BEGIN
 		@Columns = @Columns + ',' + @newline + @tab + '[' + C.COLUMN_NAME + ']'
 	FROM
 		INFORMATION_SCHEMA.COLUMNS C
-		LEFT JOIN tvf_Core_Split_Delimiter(@ColumnList, ',') E ON C.COLUMN_NAME LIKE LTRIM(RTRIM(E.Item))
+		LEFT JOIN UDF_PPA_Core_Split_Delimiter(@ColumnList, ',') E ON C.COLUMN_NAME LIKE LTRIM(RTRIM(E.Item)) ESCAPE '\'
 	WHERE
 		C.TABLE_SCHEMA = @TableSchema
 		AND C.TABLE_NAME = @TableName

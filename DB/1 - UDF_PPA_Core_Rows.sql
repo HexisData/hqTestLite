@@ -2,7 +2,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE FUNCTION [hq].[tvf_Core_Rows] 
+CREATE FUNCTION dbo.[UDF_PPA_Core_Rows] 
 (	
 	@n int
 )

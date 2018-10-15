@@ -1,136 +1,308 @@
-# hqTestLite
-A PowerShell version of hqTest. Currently only supports testing of Markit EDM Solutions.
+# Welcome to hqTestLite!
 
-## Contents
+**hqTestLite** is an open-source, PowerShell-based testing framework. It is designed to automate the testing of complex systems (like [Enterprise Data Management](https://en.wikipedia.org/wiki/Enterprise_data_management) systems) that normally resist efficient test automation.
+
+**hqTestLite** currently supports the [Markit Enterprise Data Management](https://ihsmarkit.com/products/edm.html) platform, but can easily be adapted to support testing of any platform of any kind that meets the following prerequisites:
+
+* It can be invoked from the Windows command line.
+* It can be induced to produce test output either via a text file or a query against a SQL Server database.
+
+Other features:
+
+* Tests are expressed as short PowerShell scripts, which live in your version control repository and travel with your code. 
+* Tests can be shared and executed across an entire development team and in multiple environments.
+* Test results are output as simple text files. Once a test result is *certified*, any difference against the certified result indicates a test failure.
+* Test failure optionally invokes a text comparison engine ([WinMerge](http://winmerge.org/), by default) to visualize the diff as a *very* useful troubleshooting aid.
+* Tests can be invoked from other scripts and test results can be piped to other processes to support automated regression testing and continuous delivery.
+
+# Table of Contents
+
+- [Getting Started](#getting-started)
+  * [Local Execution Policy](#local-execution-policy)
+  * [SQL Server Module](#sql-server-module)
+  * [Markit EDM](#markit-edm)
+  * [WinMerge](#winmerge)
+  * [Changing Environments](#changing-environments)
+- [Key Files and Directories](#key-files-and-directories)
+- [Global Variables](#global-variables)
+- [Cmdlets](#cmdlets)
+  * [Confirm-File](#confirm-file)
+  * [Export-CsvTestData](#export-csvtestdata)
+  * [Import-CsvTable](#import-csvtable)
+  * [Invoke-MedmComponent](#invoke-medmcomponent)
+  * [Invoke-SqlScripts](#invoke-sqlscripts)
+  * [Publish-Results](#publish-results)
+  * [Read-UserEntry](#read-userentry)
+  * [Show-Execution](#show-execution)
+  * [Test-MedmComponent](#test-medmcomponent)
+- [Scripts](#scripts)
+  * [cert.ps1](#certps1)
+  * [GenerateTestData.ps1](#generatetestdataps1)
+  * [runall.ps1](#runallps1)
+- [Database Objects](#database-objects)
+  * [dbo.tvf_Core_Rows](#dbotvf-core-rows)
+  * [dbo.tvf_Core_Split_Delimiter](#dbotvf-core-split-delimiter)
+  * [dbo.usp_Core_DumpData](#dbousp-core-dumpdata)
+
+# Getting Started
+
+First thing is to get hqTestLite installed. If it is already in use in your organization, some of this may already be done. Do that parts that are not.
+
+1. Clone this repository into a shared directory that is accessible to your whole development team.
+1. Copy script *env_config_template.ps1* to *env_config.ps1* and configure it with relevant environment settings.
+1. Run the scripts in the [*DB*](https://github.com/HexisData/hqTestLite/tree/parametric/DB) directory in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code. Note that the *Dump_Data* stored procedure will be called by most of your test result scripts, so be sure to propagate any changes there as well!
+1. Copy the [*Test*](https://github.com/HexisData/hqTestLite/tree/parametric/Test) directory into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
+1. From the [*Local*](https://github.com/HexisData/hqTestLite/tree/parametric/Local) directory, copy the *hqTestLite* folder into the root of your C: drive. *This is important!* Your test scripts will be looking for the *local_config.ps1* configuration script in this directory, and it must be in the same local location for each user!
+
+Now you are ready to run a test.
+
+1. Clone a code repository containing tests to your local machine and find the *Test* directory. Navigate into one of the test folders and open a test script: it should be obvious what is going to be tested. Now right-click on the test script file and select *Run with  PowerShell*. 
+1. Once text execution completes, find file *Result.txt* in the test directory. Open the file and scrutinize the test result. Is it what it should be?
+1. If the test result is correct, open the main **hqTestLite** repository and drag and drop your *Result.txt* file onto the *CERTIFY* shortcut you find there. The invoked PowerShell script will copy your *Result.txt* file into *Result.certified.txt* in the same location. 
+1. Now make a code change to the process under test and run the test again. If the newly generated *Result.txt* file differs from the certified version in any way, an instance of WinMerge will open, displaying the files side-by-side, so you can visualize the diff and zero in on precisely what broke.
+1. If the code change and new result are desirable, certify the new results file. This becomes the baseline for future tests.
+1. Check any changes into your version control system so that the next developer to exercise this code can stand on your shoulders!
+
+If you run into any issues the first time through, see the sections below. 
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Local Execution Policy
+
+All **hqTestLite** tests are articulated as PowerShell scripts. The first time you run a PowerShell script on your machine, you may get an error indicating that the execution of scripts is disabled on your system. If this occurs, open a PowerShell command prompt *as administrator* and run the following command:
+
+```powershell
+Set-ExecutionPolicy Unrestricted
+```
+
+Click [here](https://www.mssqltips.com/sqlservertip/2702/setting-the-powershell-execution-policy) for more info on setting your local execution policy.
+
+Note also that there is also an issue around the network location from which a script is run. Scripts that are run from an internet location, as opposed to a LAN location, raise special alerts. If your network location can be expressed either way (i.e. `//domain/resources/...` vs `//domain.com/resources/...`, choose the LAN version to minimize security alerts.
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## SQL Server Module
+
+The first time you execute a test, **hqTestLite** may attempt to download and install the *SqlServer* PowerShell module. If this occurs, you will see prompts requesting permission to run NuGet. Grant the requested permissions. 
+
+If this process breaks and you see errors indicating that the module is not connecting to SQL Server, open a PowerShell command prompt *as administrator* and run the following command:
+
+```powershell
+Install-Module -Name SqlServer
+```
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Markit EDM
+
+By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, please add the following line to your *local_config.ps1* configuration script:
+
+```powershell
+$Global:DefaultMedmProcessAgentPath = "<path to MEDM exe>\CadisProcessAgent.exe"
+```
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## WinMerge
+
+**hqTestLite** uses [WinMerge](http://winmerge.org) as its text comparison engine. If you don't already have it, please download and install WinMerge from [SourceForge](https://sourceforge.net/projects/winmerge)
+
+**hqTestLite** expects WinMerge to reside in its default installation directory. If you have elected to install WinMerge in a different directory, please add the following line to your *local_config.ps1* configuration script:
+
+```powershell
+$Global:DefaultTextDiffExe = "<path to WinMerge exe>\WinMergeU.exe"
+```
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Changing Environments
+
+Environment-specific values are managed centrally in script *env_config.ps1*. The active testing environment is selected with an edit to *local_config.ps1*:
+
+```powershell
+# Set active environment. Valid values: DEV, TMP.
+$Global:ActiveEnvironment = "DEV"
+```
+
+[Back to Top](#welcome-to-hqtestlite)
+
+# Key Files and Directories
+
+**+CERTIFY shortcut** &ndash; Drop a result file on this shortcut to certify it.
+
+**+RUNALL shortcut** &ndash; Drop a directory on this shortcut execute all PowerShell scripts inside it.
+
+**cert.ps1** &ndash; Target of the +CERTIFY shortcut. Copies file *abc.xyz* to file *abc.certfied.xyz*.
+
+**env_config_template.ps1** &ndash; Should be copied and maintained as *env_config.ps1*. Central repository for shared environment configurations.
+
+**GenerateTestData.ps1** &ndash; Generates a CSV file of random test data based on a DB table schema.
 
 **hqTestLite.psm1** &ndash; hqTestLite PowerShell module.
 
-**config.ps1** &ndash; Sample environment configuration script.
+**runall.ps1** &ndash; Target of the +RUNALL shortcut. Recursively executes all .PS1 scripts within a directory.
 
-**SampleTest.ps1** &ndash; Sample test script.
+**DB directory** &ndash; Database objects to be installed in every environment to be tested.
 
-**DB/hq.tvf_Core_Rows** &ndash; Utility UDF that generates a sequence of integers in a rowset.
+**Local directory** &ndash; Files to be copied to each user's local system.
 
-**DB/hq.tvf_Core_Split_Delimiter** &ndash; Utility UDF that splits a delimited list into a rowset.
+* **hqTestLite directory** &ndash; Copy this entire directory to the local C drive root. 
 
-**DB/hq.usp_Core_DumpData** &ndash; Utility SP that dynamically extracts data from a table or view. Useful in result scripts as it can exclude columns by pattern and automatically pick up on object schema changes.
+  * **local_config.ps1** &ndash; Local environment configuration script.
+  
+**Test directory** &ndash; Sample test repository. Copy this into source control and use it as a starting point.
 
-## Usage
+[Back to Top](#welcome-to-hqtestlite)
 
-### Test-MedmComponent and Test-MedmSolution
-In this free, open source edition of hqTest, a test is expressed as a short PowerShell script that invokes the *Test-MedmSolution* or *Test-MedmComponent* cmdlet. This cmdlet performs the following tasks:
+# Global Variables
 
-1. Optionally executes one or more SQL setup scripts against the target DB. Normally this step will be used to stage test data in cases where the process under test is consuming data in DB tables instead of a file.
-1. Executes the target MEDM Solution with specified parameters.
-1. Executes one or more result scripts against the target DB. Each script should produce a single rowset, so if more than one table must be evaluated there should be a result script for each. Result scripts are completely free form; any logic is valid so long as it produces a single rowset. Result scripts should be articulated in such as fashion as to produce a consistent result run over run, so they should leave out RunIds, update dates, and other data elements that change from one run to the next (unless the script logic normalizes them so they don't). All result script output is combined into a test result file.
-1. Optionally executes one or more cleanup scripts, normally intended to restore the database to its pre-test state.
-1. Optionally launches BeyondCompare to display the difference between the current test result file and some designated, previously certified test result file.
+The hqTestLite module creates a number of global variables, whose default values are set directly in *hqTestLite.psm1*. 
 
-A typical test script will look something like this (see [SampleTest.ps1](example/SampleTest.ps1)):
+A number of scenarios require these values to be overridden at the local level, for example so that one developer might run his tests in environment other than DEV.
 
-### Publish-Results
+Environment-specific variables are centrally managed in *env_config.ps1*. To select an active testing environment, set `$Global:ActiveEnvironment` in *local_config.ps1*.
 
-For test automation and continuous integration scenarios, the *Publish-Results* will publish the test results in a standard test reporting format. Currently JUnit is the only supported format. For an example of *Publish-Results*, see [ReportTestResults.ps1](example/ReportTestResults.ps1).
+To override a global variable in your local environment, simply copy the variable definition from *hqTestLite.psm1* to your *local_config.ps1* file and set it to the desired value. For example, to shift test execution from the DEV to the TEMP environment, add:
+```powershell
+$Global:DefaultMedmDbName = "MarkitEDM_TMP"
+```
+To create a new global variable, simply add it to *env_config.ps1*. If necessary, override its value locally in *local_config.ps1*.
 
+| Global Variable | Description | Default Value |
+|:--|:--|:--|
+| ActiveEnvironment | Sets the environment against which tests will be executed. Leverages shared script *env_config.ps1* to set relevant global variables. | `"DEV"` |
+| DefaultMedmProcessAgentPath | The local path to the MEDM Process Agent executable. This path will vary based on the MEDM version in use. Should be consistent across the team. | `"C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe"`|
+| DefaultMedmDbServer | The SQL Server of the MEDM environment against which the test will execute. | `"markitedmdevdb.eatonvance.com"` |
+| DefaultMedmDbName | The SQL Server database name of the MEDM environment against which the test will execute. | `"MarkitEDM"` |
+| DefaultTextDiffExe | The local path to your text comparison engine's executable (WinMerge by default). | `"C:\Program Files (x86)\WinMerge\WinMergeU.exe"` |
+| DefaultTextDiffParams | An array of strings representing the text comparison engine's command-line parameters. Tokens `{CurrentResult}` and `{CertfiedResult}` will be replaced by the relevant file names. | `@("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}"`) |
+| DefaultSuppressTextDiffPopup | When `$true`, this switch prevents the text comparison engine from being invoked in the event of a failed test. Useful for automated regression testing. | `$false` |
+| DefaultSqlScriptType | The script type token to use when `-Verbose` or `-WhatIf` are activated. Useful for troubleshooting. | `"Sql Script"` |
+| DefaultReportFolder | The default location where *Publish-Results* will place test results reports. | `"C:\hqTestLite\Results"` |
 
-### QuickStart
+[Back to Top](#welcome-to-hqtestlite)
 
-#### Locate the hqTestLite module in a central repository to make it easy to upgrade.
+# Cmdlets
 
-`Import-Module "\\netshare\hqTestLite.psm1" -Force`
+hqTestLite features the following cmdlets. Most are used internally, but any may be used in your test scripts or elsewhere.
 
-#### Override global defaults with values specific to the test environment.
+[Back to Top](#welcome-to-hqtestlite)
 
-`Invoke-Expression "\\netshare\Test\config.ps1"`
+## Confirm-File
 
-#### Run this
+Performs file validation. Pops up the diff tool on completion, and writes out test results in JUnit format. *Confirm-File* is useful in the case where you have multiple files output by the process under test. You can call *Invoke-MedmComponent* and then call *Confirm-File* multiple times (once per file output from the process). 
 
-Example below using global variables for -ProcessAgentPath, -DbServer, -DbName, and -BeyondComparePath. Leaving out directory params assuming SQL scripts are co-located with the test script. 
+Internally, *Test-MedmComponent* calls *Confirm-File* to validate the test results with a certified file. 
+
+**Syntax**
 
 ```powershell
-Test-MedmSolution `
-    -SetupSqlFiles "MySolution_Setup.sql" `
-    -SolutionName "MySolution" `
-    -SolutionParams "Param1=Value:Param2=Value2:Param3=Value3" `
-    -ResultSqlFiles "MySolution_Result1.sql,MySolution_Result2.sql" `
-    -CleanupSqlFiles "MySolution_Cleanup.sql" `
-    -TestResultPath "MySolution_TestResult.txt" `
-    -CertifiedResultPath "MySolution_CertifiedResult.txt" `
+Confirm-File `
+	-FilePath <string> `
+	-CertifiedFilePath <string> `
+	[-SuppressTextDiffPopup] `
+	[-TextDiffExe <string>] `
+	[-TextDiffParams <string[]>] `
+	[-TestName <string>]
+```
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -FilePath | Required. Current test result file. Relative paths will be resolved relative to the current directory.<br /><br />Ex: `-FilePath "Result.txt"` |
+| -CertifiedFilePath | Required. Certified test result file. Relative paths will be resolved relative to the current directory.<br /><br />Ex: `-CertifiedFilePath "Result.certified.txt"` |
+| -SuppressTextDiffPopup | Switch. If present, prevents the text comparison engine from being invoked in the event of a failed test. Useful for automated regression testing. Defaults to the value of `$Global:DefaultSuppressTextDiffPopup`.<br /><br />Ex: `-SuppressTextDiffPopup` |
+| -TextDiffExe | Optional. The local path to your text comparison engine's executable (WinMerge by default). Defaults to the value of `$Global:DefaultTextDiffExe`.<br /><br />Ex:`-TextDiffExe "C:\Program Files (x86)\WinMerge\WinMergeU.exe"` |
+| -TextDiffParams | Optional. An array of strings representing the text comparison engine's command-line parameters. Tokens `{CurrentResult}` and `{CertfiedResult}` will be replaced by the relevant file names. Defaults to the value of `$Global:DefaultTextDiffParams`. <br /><br />Ex: `-TextDiffParams @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}"`) |
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Export-CsvTestData
+
+Generates a CSV file of random test data matching the schema of a designated database table.
+
+Columns may be included or excluded based on a regex pattern. Values may be constrained into ranges by type.
+
+Character data will be generated as random sequences of capital letters, to the column length limit or to the value of *-MaxStrLen*, whichever is smaller.
+
+**Syntax**
+
+```powershell
+Export-CsvTestData `
+    [-DbServer <string>] `
+    [-DbName <string>] `
+    [-TableSchema <string>] `
+    -TableName <string> `
+    [-ColNameAction <Include|Exclude>] `
+    [-ColNamePattern <string>] `
+    -CsvPath <string>] `
+    [-RowCount <int>] `
+    [-MinDate <datetime>] `
+    [-MaxDate <datetime>] `
+    [-MinDec <decimal>] `
+    [-MaxDec <decimal>] `
+    [-MinInt <int>] `
+    [-MaxInt <int>] `
+    [-MaxStrLen <int>]
 ```
 
-## Global Defaults
+**Parameters**
 
-The hqTestLite module contains a number of global defaults intended to allow central control over common values. In practice, many of these values should be overridden on a per-environment basis as illustrated in [SampleTest.ps1](example/SampleTest.ps1). 
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "MyDbServer"` |
+| -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
+| -TableSchema | Optional. Schema of the target database table. Defaults to "dbo".<br /><br />Ex: `-TableSchema "dbo"` |
+| -TableName | Required. Target database table name.<br /><br />Ex: `-TableName "T_MASTER_SEC"` |
+| -ColNameAction | Optional. Indicates whether *-ColNamePattern* will be used to include or exclude columns. Defaults to *Exclude*.<br /><br />Ex: `-ColNameAction Exclude` |
+| -ColNamePattern | Optional. Regex pattern of column names to include or exclude. Defaults to "^CADIS_SYSTEM\_\|.\*RUN\_?ID".<br /><br />Ex: `-ColNamePattern "^CADIS_SYSTEM\_.\*RUN\_?ID"` |
+| -CsvPath  | Required. The path to the CSV file to be generated. Relative paths will be resolved relative to the script execution patrh.<br /><br />Ex: `-CsvPath "./SetupSql/T_MASTER_SEC.csv"` |
+| -RowCount | Optional. Number of rows of test data to generate. Defaults to 10.<br /><br />Ex: `-RowCount 10` |
+| -MinDate | Optional. Minimum value for randomly generated date-type values. Defaults to 2018-01-01T00:00:00.<br /><br />Ex: `-MinDate [datetime]::ParseExact("2018-01-01", "yyyy-MM-dd", $null)` |
+| -MaxDate | Optional. Maximum value for randomly generated date-type values. Defaults to 2028-01-01T00:00:00.<br /><br />Ex: `-MaxDate [datetime]::ParseExact("2028-01-01", "yyyy-MM-dd", $null)` |
+| -MinDec | Optional. Minimum value for randomly generated decimal-type values. Defaults to 0.0.<br /><br />Ex: `-MinDec 0.0` |
+| -MaxDec | Optional. Maximum value for randomly generated decimal-type values. Defaults to 10.0.<br /><br />Ex: `-MaxDec 10.0` |
+| -MinInt | Optional. Minimum value for randomly generated integer-type values. Defaults to 0.<br /><br />Ex: `-MinInt 0.0` |
+| -MaxInt | Optional. Maximum value for randomly generated integer-type values. Defaults to 10.<br /><br />Ex: `-MaxInt 10.0` |
+| -MaxStrLen | Optional. Maximum length of generated character strings. Defaults to 32.<br /><br />Ex: `-MaxStrLen 32` |
 
-The following global variables may be overridden:
+[Back to Top](#welcome-to-hqtestlite)
 
-**$Global:DefaultMedmProcessAgentPath** &ndash; The local path to the MEDM Process Agent executable. This path will vary based on the MEDM version in use. Should be consistent across the team.
+## Import-CsvTable
 
-**$Global:DefaultMedmDbServer** &ndash; The current environment's SQL Server address.
+Converts a CSV file into a set of SQL insert statements and executes them against a database as follows:
 
-**$Global:DefaultMedmDbName** &ndash; The current environment's SQL Server database name.
+* The table name will be the file name, excluding the CSV extension. If the table is in a non-default schema, add the schema name to the file name, like this: `myschema.MYTABLE.csv`.
+* The column names will be drawn from the first row of the CSV file. Column names will be enclosed in square brackets, so odd column names are still valid.
+* All values will be inserted as text, with any single quotes escaped. The system relies on implicit conversion to the table column's native type.
+* The system performs no checking around nonexistent column names, invalid types, primary key collisions, etc. Any of these will produce a SQL error. *Caveat emptor.*
 
-**$Global:DefaultBeyondComparePath** &ndash; The local path to the BeyondCompare executable. Should be consistent across the team.
+**Syntax**
 
-**$Global:DefaultSqlScriptType** &ndash; The default script type token to use when *-Verbose* or *-WhatIf* are activated. Useful for troubleshooting.
-
-**$Global:DefaultReportFolder** &ndash; The default location where *Publish-Results* will place test results reports
-
-See [config.ps1](src/config.ps1) for a typical example of an environment configuration script.
-
-## Cmdlets
-
-**Invoke-SqlScripts** &ndash; Executes an ordered list of SQL scripts located in the same directory. Optionally collects their outputs into a text file.
-
-**Invoke-MedmSolution** &ndash; Executes a Markit EDM Solution. Optionally executes a set of SQL setup scripts prior to Solution execution and a set of cleanup scripts after Solution execution.
-
-**Test-MedmComponent** &ndash; Tests a Markit EDM Component (DataPorter, DataInspector, DataMatcherProcess, DataConstructor, or Solution) by optionally running setup scripts, executing the Component, optionally running a query and sending its output to a file, optionally running cleanup scripts, performing a diff, and optionally invoking BeyondCompare to display the difference between the actual test result file and previously certified result file.
-
-**Test-MedmSolution** &ndash; A shortcut to *Test-MedmComponent* to run a Markit EDM Solution
-
-**Publish-Results** &ndash; Produces a file containing the results of executed tests in standard test reporting formats. Currently supports JUnit.
-
-
-### Invoke-SqlScripts
-
-Executes an ordered list of SQL scripts located in the same directory. Optionally collects their outputs into a text file.
-
-#### Syntax
-
-```
-Invoke-SqlScripts `
-    -DbServer <string> `
-    -DbName <string> `
-    [-SqlDir <string>] `
-    -SqlFiles <string> `
-    [-ScriptType <string>] `
-    [-OutputPath <string>] `
-    [-OutputTable]
+```powershell
+Import-CsvTable `
+    [-DbServer <string>] `
+    [-DbName <string>] `
+    -CsvPath <string> 
 ```
 
-#### Parameters
+**Parameters**
 
-**-DbServer** &ndash; Required. The target SQL Server database server address. Ex: `-DbServer "MyDbServer"`
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "MyDbServer"` |
+| -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
+| -CsvPath  | Required. The path to the CSV file to be loaded. Relative paths will be resolved relative to the script execution patrh.<br /><br />Ex: `-CsvPath "./SetupSql/T_MASTER_SEC.csv"` |
 
-**-DbName** &ndash; Required. The target SQL Server database name. Ex: `-DbName "MyDb"`
+[Back to Top](#welcome-to-hqtestlite)
 
-**-SqlDir** &ndash; Optional. The directory containing the SQL scripts to be executed. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SqlDir "C:\MySqlDir"`
-
-**-SqlFiles** &ndash; Required. A comma-delimited list of SQL script files to be executed. All must be located within the directory indicated with *-SqlDir*. Ex: `-SqlFiles "MySqlFile1.sql,MySqlFile2.sql"`
-
-**-OutputPath** &ndash; Optional. If set, indicates the text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. Ex: `-OutputPath "C:\MyOutputDir\MyOutputFile.txt"`
-
-**-ScriptType** &ndash; Optional. Used to differentiate different script types with the *-Verbose* and *-WhatIf* flags. Defaults to the value of *$Global:DefaultSqlScriptType*. Ex: `-ScriptType "Sql Script"` 
-
-**-OutputTable** &ndash; Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. Ex: `-OutputTable` 
-
-### Invoke-MedmComponent
+## Invoke-MedmComponent
 
 Executes a Markit EDM Component. Optionally executes a set of SQL setup scripts prior to Component execution, and a set of cleanup scripts after Component execution.
 
-#### Syntax
+**Syntax**
 
-```
+```powershell
 Invoke-MedmComponent `
     [-ProcessAgentPath <string>] `
     [-DbServer <string>] `
@@ -143,47 +315,144 @@ Invoke-MedmComponent `
     [-CleanupSqlDir <string>] `
     [-CleanupSqlFiles <string>] `
 ```
+**Parameters**
 
-**-ProcessAgentPath** &ndash; Optional. Path to *CADISProcessAgent.exe* for target MEDM version. Defaults to the value of *$Global:DefaultMedmProcessAgentPath*. Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CADISProcessAgent.exe"`
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -ProcessAgentPath | Optional. Path to command line executable for target MEDM version. Defaults to the value of `$Global:DefaultMedmProcessAgentPath`. <br /><br />Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CadisProcessAgent.exe"` |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`. <br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
+| -DbName | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MarkitEDM"` |
+| -SetupSqlDir | Optional. A directory containing SQL scripts to be executed prior to component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-SetupSqlDir ".\SetupSql"` |
+| -SetupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed prior to component invocation. All must be located within the directory indicated by `-SetupSqlDir`. <br /><br />Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"` |
+| -ComponentName | Required. The name of the MEDM component to be executed. <br /><br />Ex: `-ComponentName "My Solution"` |
+| -ComponentType | Required. The type of the MEDM component to be executed. One of the following values: DataPorter, DataInspector, DataMatcherProcess, DataConstructor, Solution.<br /><br />Ex: `-ComponentType: "Solution"` |
+| -ConfigurableParams | Optional. A delimited list of MEDM configurable parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". <br /><br />Ex: `-SolutionParams "param1=value1:param2=value2"` |
+| -CleanupSqlDir | Optional. A directory containing SQL scripts to be executed following component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-CleanupSqlDir ".\CleanupSql"` |
+| -CleanupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed following component invocation. All must be located within the directory indicated by `-CleanupSqlDir`. <br /><br />Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"` |
 
-**-DbServer** &ndash; Optional. Defaults to the value of *$Global:DefaultMedmProcessAgentPath*. The target SQL Server database server address. Defaults to the value of *$Global:DefaultMedmDbServer*. Ex: `-DbServer "MyDbServer"`
+[Back to Top](#welcome-to-hqtestlite)
 
-**-DbName** &ndash; Optional. The target SQL Server database name. Defaults to the value of *$Global:DefaultMedmDbName*. Ex: `-DbName "MyDb"`
+## Invoke-SqlScripts
 
-**-SetupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed prior to Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SetupSqlDir "C:\MySetupSqlDir"`
+Executes an ordered list of SQL scripts located in the same directory. Optionally collects their outputs into a text file.
 
-**-SetupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated with *-SetupSqlDir*. Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"`
+If a file in the list has a .CSV extension, then it will be executed as a set of INSERT statements with the as described in the *Import-CsvTable* cmdlet documentation above.
 
-**-ComponentName** &ndash; Required. The name of the MEDM Solution to be executed. Ex: `-SolutionName "My Solution"`
+**Syntax**
 
-**-ComponentType** &ndash; Required. Supports "DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution"
+```powershell
+Invoke-SqlScripts `
+    [-DbServer <string>] `
+    [-DbName <string>] `
+    [-SqlDir <string>] `
+    -SqlFiles <string> `
+    [-OutputPath <string>] `
+    [-OutputTable] `
+    [-ScriptType <string>]
+```
 
-**-ConfigurableParams** &ndash; Optional. A delimited list of Solution parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". Ex: `-SolutionParams "param1=value1:param2=value2"`
+**Parameters**
 
-**-CleanupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyCleanupSqlDir"`
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
+| -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
+| -SqlDir   | Optional. The directory containing the SQL scripts to be executed. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory.<br /><br />Ex: `-SqlDir "./ResultSql"` |
+| -SqlFiles | Required. A comma-delimited list of SQL script files to be executed. All files must be located within the directory indicated by `-SqlDir`.<br /><br />Ex: `-SqlFiles "T_PREMASTER_SEC.sql,T_MASTER_SEC.csv"` |
+| -OutputPath | Optional. If set, indicates the single text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. <br /><br />Ex: `-OutputPath "Result.txt"` |
+| -OutputTable | Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. <br /><br />Ex: `-OutputTable` |
+| -ScriptType | Optional. Differentiates different script types in conjunction with the `-Verbose` and `-WhatIf` switches. Defaults to the value of `$Global:DefaultSqlScriptType`. <br /><br />Ex: `-ScriptType "Sql Script"` |
 
-**-CleanupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed following Solution invocation. All must be located within the directory indicated with *-CleanupSqlDir*. Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"`
+[Back to Top](#welcome-to-hqtestlite)
 
+## Publish-Results
 
-### Invoke-MedmSolution
+Produces a report showing pass/fail status of tests in a standard test results reporting format. Currently supports JUnit.
 
-A wrapper around `Invoke-MedmComponent`. Passes values through to and hard-codes `-ComponentType Solution`
-
-### Confirm-File
-Performs file validation. Pops up the diff tool on completion, and writes out test results in JUnit format. Confirm-File is useful in the case where you have multiple files output by the process under test. You can call Invoke-MedmComponent and then call Confirm-File multiple times (once per file output from the process). 
-
-Internally, Test-MedmComponent and Test-MedmSolution call Confirm-File to validate the test results with a certified file. 
-
-### Test-MedmComponent
-
-Tests a Markit EDM Component by optionally running setup scripts, executing the Component, running a set of result scripts and sending their output to a file, optionally running cleanup scripts, performing a diff, and then optionally BeyondCompare to display the dfference between the actual test result file and a previously staged certified result file.
-
-Returns a test result object.
-
-#### Syntax
+**Syntax**
 
 ```
-Test-MedmSolution `
+Publish-Results `
+    [-ReportFolder <string>] `
+    -TestSuiteName <string> `
+    -Results <Object[]> `
+    [-ReportFormat <string>]
+```
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -ReportFolder | Optional. Points to the folder that should contain the generated report. If omitted, defaults to `$Global:DefaultReportFolder`.<br /><br />Ex: `-ReportFolder "C:\hqTestLite\Results"` |
+| -TestSuiteName | Required. The name of the test suite. Can be whatever string value you choose.<br /><br />Ex: `-TestSuiteName "Load Tests"` |
+| -Results | Required. An array containing test results objects returned from calls to `Test-MedmComponent`. <br /><br />Ex: `-Results $MyResults` |
+| -ReportFormat | Optional. The desired report format. Defaults to `"JUnit"`.<br /><br />Ex: `-ReportFormat "JUnit"` |
+
+**Returns**
+
+A string value containing the path to the report file.
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Read-UserEntry
+
+This is a utility cmdlet that captures input from the user and validates it against a regex pattern. If a default value is provided, the user can accept it by pressing Enter.
+
+**Syntax**
+
+```powershell
+Read-UserEntry `
+	-Label <string> `
+	[-Default <string>] `
+	[-Pattern <string>]
+```
+
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -Label | Required. Identifies the data being captured to the user.<br /><br />Ex: `-Label "Height Above Sea Level"` |
+| -Default | Optional. Default value, which the user can accept by pressing the Enter key.<br /><br />Ex: `-Default "0"` |
+| -Pattern | Optional. Regex pattern against user input will be evaluated. Defaults to ".\*" <br /><br />Ex: `-Pattern "\d+"` |
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Show-Execution
+
+Displays test execution output and optionally pauses for a user keypress.
+
+**Syntax**
+
+```powershell
+Read-UserEntry `
+	-Result <PSObject> `
+	[-Message <string>]
+```
+
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -Result | Test result object.<br /><br />Ex: `-Result $result ` |
+| -Message | Optional. Message to be displayed following test execution.<br /><br />Ex: `-Message "Test complete!" ` |
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Test-MedmComponent
+
+Tests a Markit EDM component by performing the following actions:
+
+* Optionally execute a set of setup scripts. 
+* Executing the component.
+* Execute a set of result scripts and consolidate their outputs into a text file.
+* Optionally execute a set of cleanup scripts.
+* Performing a comparison of the new result file against a certified result.
+* If a difference exists, optionally invoke a text comparison engine to visualize it.
+* Return a test result object.
+
+**Syntax**
+
+```powershell
+Test-MedmComponent `
     [-ProcessAgentPath <string>] `
     [-DbServer <string>] `
     [-DbName <string>] `
@@ -194,55 +463,42 @@ Test-MedmSolution `
     [-ConfigurableParams <string>] `
     [-ResultSqlDir <string>] `
     [-ResultSqlFiles <string>] `
+    [-OutputTable] `
     [-CleanupSqlDir <string>] `
     [-CleanupSqlFiles <string>] `
     [-TestResultPath <string>] `
     [-CertifiedResultPath <string>] `
-    [-BeyondComparePath <string>] `
-    [-OutputTable] `
     [-SuppressDiffToolPopup] `
+    [-TextDiffExe <string>] `
+    [-TextDiffParams <string[]>] `
     [-TestName <string>]
 ```
 
-#### Parameters
+**Parameters**
 
-**-ProcessAgentPath** &ndash; Required. Path to *CADISProcessAgent.exe* for target MEDM version. Defaults to the value of *$Global:DefaultMedmProcessAgentPath*. Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CADISProcessAgent.exe"`
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -ProcessAgentPath | Optional. Path to command line executable for target MEDM version. Defaults to the value of `$Global:DefaultMedmProcessAgentPath`. <br /><br />Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CadisProcessAgent.exe"` |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`. <br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
+| -DbName | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MarkitEDM"` |
+| -SetupSqlDir | Optional. A directory containing SQL scripts to be executed prior to component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-SetupSqlDir ".\SetupSql"` |
+| -SetupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated by `-SetupSqlDir`.<br /><br />Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"` |
+| -ComponentName | Required. The name of the MEDM component to be executed. <br /><br />Ex: `-ComponentName "My Solution"` |
+| -ComponentType | Required. The type of the MEDM component to be executed. One of the following values: DataPorter, DataInspector, DataMatcherProcess, DataConstructor, Solution.<br /><br />Ex: `-ComponentType: "Solution"` |
+| -ConfigurableParams | Optional. A delimited list of MEDM configurable parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". | Ex: `-SolutionParams "param1=value1:param2=value2"` |
+| -ResultSqlDir | Optional. A directory containing SQL scripts to extract test results after component execution. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-ResultSqlDir ".\ResultSql"` |
+| -ResultSqlFiles | Optional. A comma-delimited list of SQL script files to extract test results after component execution. All must be located within the directory indicated by `-ResultSqlDir`. <br /><br />Ex: `-ResultSqlFiles "MyResultSqlFile1.sql,MyResultSqlFile2.sql"` |
+| -OutputTable | Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. <br /><br />Ex: `-OutputTable` |
+| -CleanupSqlDir | Optional. A directory containing SQL scripts to be executed following component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-CleanupSqlDir ".\CleanupSql"` |
+| -CleanupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed following component invocation. All must be located within the directory indicated by `-CleanupSqlDir`.<br /><br />Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"` |
+| -TestResultPath | Required. Destination file for test result scripts. Relative paths will be resolved relative to the current directory, and any existing file of the same name will be overwritten.<br /><br />Ex: `-TestResultPath "Result.txt"` |
+| -CertifiedResultPath | Required. Certified test result file. Relative paths will be resolved relative to the current directory.<br /><br />Ex: `-CertifiedFilePath "Result.certified.txt"` |
+| -SuppressTextDiffPopup | Switch. If present, prevents the text comparison engine from being invoked in the event of a failed test. Useful for automated regression testing. Defaults to the value of `$Global:DefaultSuppressTextDiffPopup`.<br /><br />Ex: `-SuppressTextDiffPopup` |
+| -TextDiffExe | Optional. The local path to your text comparison engine's executable (WinMerge by default). Defaults to the value of `$Global:DefaultTextDiffExe`.<br /><br />Ex:`-TextDiffExe "C:\Program Files (x86)\WinMerge\WinMergeU.exe"` |
+| -TextDiffParams | Optional. An array of strings representing the text comparison engine's command-line parameters. Tokens `{CurrentResult}` and `{CertfiedResult}` will be replaced by the relevant file names. Defaults to the value of `$Global:DefaultTextDiffParams`.<br /><br />Ex: `-TextDiffParams @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}"`) |
+| -TestName | Optional. If present, is included in the `Name` property of the return object.<br /><br />Ex: `-TestName "1000 Load BPS Security"` |
 
-**-DbServer** &ndash; Required. The target SQL Server database server address. Defaults to the value of *$Global:DefaultMedmDbServer*. Ex: `-DbServer "MyDbServer"`
-
-**-DbName** &ndash; Required. The target SQL Server database name. Defaults to the value of *$Global:DefaultMedmDbName*. Ex: `-DbName "MyDb"`
-
-**-SetupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed prior to Solution invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-SetupSqlDir "C:\MySetupSqlDir"`
-
-**-SetupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated with *-SetupSqlDir*. Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"`
-
-**-ComponentName** &ndash; Required. The name of the MEDM Component to be executed. Ex: `-ComponentName "My Component"`
-
-**-ComponentType** &ndash; Required. Supports "DataPorter", "DataInspector", "DataMatcherProcess", "DataConstructor", "Solution"
-
-**-ConfigurableParams** &ndash; Optional. A delimited list of Configurable Parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". Ex: `-ConfigurableParams "param1=value1:param2=value2"`
-
-**-ResultSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation to extract test results. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyResultSqlDir"`
-
-**-ResultSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed following Solution invocation to extract test results. All must be located within the directory indicated with *-ResultSqlDir*. Ex: `-ResultSqlFiles "MyResultSqlFile1.sql,MyResultSqlFile2.sql"`. If omitted, you are assuming that the Markit EDM Component that is under test will produce a file to validate as part of this test.
-
-**-CleanupSqlDir** &ndash; Optional. A directory containing SQL scripts to be executed following Solution invocation and test result extraction. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. Ex: `-CleanupSqlDir "C:\MyCleanupSqlDir"`
-
-**-CleanupSqlFiles** &ndash; Optional. A comma-delimited list of SQL script files to be executed following Solution invocation and test result extraction. All must be located within the directory indicated with *-CleanupSqlDir*. Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"`
-
-**-TestResultPath** &ndash; Required. Indicates the text file to which all test result script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. Ex: `-TestResultPath "C:\MyTestDir\MyTestResult.txt"`
-
-**-CertifiedResultPath** &ndash; Optional. Indicates the text file against which the file indicated with *-TestResultPath* will be compared. If specified, BeyondCompare will be launched following test execution to compare the two files. Relative paths will be resolved relative to the current directory. Ex: `-CertifiedResultPath "C:\MyTestDir\MyCertifiedResult.txt"`
-
-**-BeyondComparePath** &ndash; Optional. Path to the BeyondCompare executable. Relative paths will be resolved relative to the current directory. Defaults to the value of *$Global:DefaultBeyondComparePath*. Ex: `-BeyondComparePath "C:\Program Files\Beyond Compare 4\BCompare.exe"`
-
-**-OutputTable** &ndash; Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. Ex: `-OutputTable` 
-
-**-SuppressDiffToolPopup** &ndash; Switch. If present, causes the cmdlet to skip the BeyondCompare popup. A diff is still performed, with results included in the return object. This switch is useful for test automation or continuous integration scenarios.
-
-**-TestName** &ndash; Optional. If present, is included in the `Name` property of the return object.
-
-#### Returns
+**Returns**
 
 An object with the following properties:
 
@@ -251,33 +507,78 @@ An object with the following properties:
 * Time &ndash; The execution time of the Markit EDM Component being tested
 * Reason &ndash; if Status is `FAILED`, Reason will contain the diff results showing where the test result file is different from the certified file.
 
-### Test-MedmSolution
+[Back to Top](#welcome-to-hqtestlite)
 
-A wrapper around `Test-MedmComponent`. Passes values through to and hard-codes `-ComponentType Solution`
+# Scripts
 
-### Publish-Results
+The hqTestLite repository contains a number of scripts that provide utility functions or leverage the module in useful ways.
 
-Produces a report showing pass/fail status of tests in a standard test results reporting format. Currently supports JUnit.
+[Back to Top](#welcome-to-hqtestlite)
 
-#### Syntax
-```
-Publish-Results `
-    [-ReportFolder <string>] `
-    -TestSuiteName <string> `
-    -Results <Object[]> `
-    [-ReportFormat <string>]
-```
+## cert.ps1
 
-#### Parameters
+This script powers the +CERTIFY shortcut in the main directory of the repository. When a user drops a file onto this shortcut, the *cert.ps1* creates a copy of the file in the same location, with ".certified" inserted at the end of the file name and before the extension.
 
-**-ReportFolder** &ndash; Optional. Points to the folder that should contain the generated report. If ommitted, defaults to `$Global:DefaultReportFolder`
+For example, *Result.txt* would generate *Result.certified.txt*.
 
-**-TestSuiteName** &ndash; Required. The name of the test suite. Can be whatever string value you choose.
+[Back to Top](#welcome-to-hqtestlite)
 
-**-Results** &ndash; Required. An array containing test results objects returned from calls to `Test-MedmComponent` or `Test-MedmSolution`. See [ReportTestResult.ps1](example/ReportTestResults.ps1)
+## GenerateTestData.ps1
 
-**-ReportFormat** &ndash; Optional. The desired report format. Defaults to "JUnit". 
+This script generates a CSV of test data based on a database table schema, with an interactive user experience. The script leverages cmdlets *Read-UserEntry* and *Export-CsvTestData*.
 
-#### Returns
+[Back to Top](#welcome-to-hqtestlite)
 
-A string value containing the path to the report file.
+## runall.ps1
+
+This script powers the +RUNALL shortcut in the main directory of the repository. When a user drops a directory onto this shortcut, all .PS1 scripts inside the directory are executed with recursion.
+
+[Back to Top](#welcome-to-hqtestlite)
+
+# Database Objects
+
+The DB directory contains a number of database objects intended to assist in the extraction of test results.
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## dbo.tvf_Core_Rows
+
+This table-valued function generates a sequence of integers as a one-column rowset.
+
+**Parameters**
+
+| Parameter | Data Type | Description |
+|--|:--:|:--|
+| @n | int | Number of rows to generate. |
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## dbo.tvf_Core_Split_Delimiter
+
+This table-valued function splits a delimited string into a rowset.
+
+**Parameters**
+
+| Parameter | Data Type | Description |
+|--|:--:|:--|
+| @String | nvarchar(max) | Delimited string. |
+| @Delimiter| nvarchar(255) | String delimiter. Multiple-character delimiters are allowed. |
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## dbo.usp_Core_DumpData
+
+This stored procedure dynamically selects data from a table or a view. It is the primary method of extracting test result data from the database. Omitted parameters will acquire their default values.
+
+**Parameters**
+
+| Parameter | Data Type | Default Value | Description |
+|--|:--:|:--|:--|
+| @TableSchema| nvarchar(128) | 'dbo' | Optional. Schema of object to be queried. |
+| @TableName| nvarchar(128) | | Required. Name of object to be queried. Can be either a table or a view. |
+| @ColumnAction| char(1), 'I' or 'E' | 'E' | Optional. Specifies whether columns matching the patterns expressed in @ColumnList should be [I]ncluded or [E]xcluded. |
+| @ColumnList | nvarchar(max) | '%RunId,CADIS\\\_SYSTEM\\\_%' | Optional. Comma-delimited list of LIKE-syntax patterns that specify columns to be included or excluded form the query. Escape special characters with a '\\'. |
+| @Where| nvarchar(max) | NULL | Optional. Logical expression that will be applied to the query in a WHERE clause. |
+| @OrderBy| nvarchar(max) | NULL | Optional. Column list that will be applied to the query in an ORDER BY clause. |
+
+[Back to Top](#welcome-to-hqtestlite)

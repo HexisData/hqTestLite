@@ -1,8 +1,8 @@
--- PPA_SEC_ID 1004
+-- SEC_ID 1004
 
-INSERT INTO [dbo].[T_PPA_BBO_EQUITY_FUND_SEC]
+INSERT INTO [dbo].[T_BBO_EQUITY_FUND_SEC]
            ([TOP_LEVEL_RUN_ID]
-           ,[PPA_SEC_ID]
+           ,[SEC_ID]
            ,[FILE_NAME]
            ,[FILE_REGION]
            ,[FILE_NAME_DATE]
@@ -163,7 +163,7 @@ INSERT INTO [dbo].[T_PPA_BBO_EQUITY_FUND_SEC]
            ,[CADIS_SYSTEM_LASTMODIFIED])
      VALUES
            (20000 -- <TOP_LEVEL_RUN_ID, int,>
-           ,1004 -- <PPA_SEC_ID, int,>
+           ,1004 -- <SEC_ID, int,>
            ,'CC' -- <FILE_NAME, varchar(50),>
            ,'CC' -- <FILE_REGION, varchar(50),>
            ,'2018-01-02' -- <FILE_NAME_DATE, datetime,>
@@ -324,11 +324,11 @@ INSERT INTO [dbo].[T_PPA_BBO_EQUITY_FUND_SEC]
            ,GETDATE() -- <CADIS_SYSTEM_LASTMODIFIED, datetime,>
 		)
 
--- PPA_SEC_ID 1007
+-- SEC_ID 1007
 
-INSERT INTO [dbo].[T_PPA_BBO_EQUITY_FUND_SEC]
+INSERT INTO [dbo].[T_BBO_EQUITY_FUND_SEC]
            ([TOP_LEVEL_RUN_ID]
-           ,[PPA_SEC_ID]
+           ,[SEC_ID]
            ,[FILE_NAME]
            ,[FILE_REGION]
            ,[FILE_NAME_DATE]
@@ -489,7 +489,7 @@ INSERT INTO [dbo].[T_PPA_BBO_EQUITY_FUND_SEC]
            ,[CADIS_SYSTEM_LASTMODIFIED])
      VALUES
            (20000 -- <TOP_LEVEL_RUN_ID, int,>
-           ,1007 -- <PPA_SEC_ID, int,>
+           ,1007 -- <SEC_ID, int,>
            ,'CC' -- <FILE_NAME, varchar(50),>
            ,'CC' -- <FILE_REGION, varchar(50),>
            ,'2018-01-02' -- <FILE_NAME_DATE, datetime,>
@@ -650,9 +650,9 @@ INSERT INTO [dbo].[T_PPA_BBO_EQUITY_FUND_SEC]
            ,GETDATE() -- <CADIS_SYSTEM_LASTMODIFIED, datetime,>
 		)
 
--- SELECT * FROM dbo.T_PPA_BBO_EQUITY_FUND_SEC WHERE PPA_SEC_ID BETWEEN 1000 AND 1007
+-- SELECT * FROM dbo.T_BBO_EQUITY_FUND_SEC WHERE SEC_ID BETWEEN 1000 AND 1007
 
--- DELETE dbo.T_PPA_BBO_EQUITY_FUND_SEC WHERE PPA_SEC_ID BETWEEN 1000 AND 1007
+-- DELETE dbo.T_BBO_EQUITY_FUND_SEC WHERE SEC_ID BETWEEN 1000 AND 1007
 
 GO
 

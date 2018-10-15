@@ -40,9 +40,9 @@ Other features:
   * [GenerateTestData.ps1](#generatetestdataps1)
   * [runall.ps1](#runallps1)
 - [Database Objects](#database-objects)
-  * [dbo.UDF_PPA_Core_Rows](#dboudf-ppa-core-rows)
-  * [dbo.UDF_PPA_Core_Split_Delimiter](#dboudf-ppa-core-split-delimiter)
-  * [dbo.USP_PPA_Core_DumpData](#dbousp-ppa-core-dumpdata)
+  * [dbo.tvf_Core_Rows](#dbotvf-core-rows)
+  * [dbo.tvf_Core_Split_Delimiter](#dbotvf-core-split-delimiter)
+  * [dbo.usp_Core_DumpData](#dbousp-core-dumpdata)
 
 # Getting Started
 
@@ -77,7 +77,7 @@ Set-ExecutionPolicy Unrestricted
 
 Click [here](https://www.mssqltips.com/sqlservertip/2702/setting-the-powershell-execution-policy) for more info on setting your local execution policy.
 
-Note also that there is also an issue around the network location from which a script is run. Scripts that are run from an internet location, as opposed to a LAN location, raise special alerts. If your network location can be expressed either way (i.e. `//paraport/resources/...` vs `//paraport.com/resources/...`, choose the LAN version to minimize security alerts.
+Note also that there is also an issue around the network location from which a script is run. Scripts that are run from an internet location, as opposed to a LAN location, raise special alerts. If your network location can be expressed either way (i.e. `//domain/resources/...` vs `//domain.com/resources/...`, choose the LAN version to minimize security alerts.
 
 [Back to Top](#welcome-to-hqtestlite)
 
@@ -541,7 +541,7 @@ The DB directory contains a number of database objects intended to assist in the
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## dbo.UDF_PPA_Core_Rows
+## dbo.tvf_Core_Rows
 
 This table-valued function generates a sequence of integers as a one-column rowset.
 
@@ -553,7 +553,7 @@ This table-valued function generates a sequence of integers as a one-column rows
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## dbo.UDF_PPA_Core_Split_Delimiter
+## dbo.tvf_Core_Split_Delimiter
 
 This table-valued function splits a delimited string into a rowset.
 
@@ -566,7 +566,7 @@ This table-valued function splits a delimited string into a rowset.
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## dbo.USP_PPA_Core_DumpData
+## dbo.usp_Core_DumpData
 
 This stored procedure dynamically selects data from a table or a view. It is the primary method of extracting test result data from the database. Omitted parameters will acquire their default values.
 

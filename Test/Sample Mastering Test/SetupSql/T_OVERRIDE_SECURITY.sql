@@ -1,9 +1,9 @@
--- PPA_SEC_ID 1000
+-- SEC_ID 1000
 
-INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
+INSERT INTO [dbo].[T_OVERRIDE_SECURITY]
            ([TOP_LEVEL_RUN_ID]
            ,[MASTER_TOP_LEVEL_RUN_ID]
-           ,[PPA_SEC_ID]
+           ,[SEC_ID]
            ,[APIR_IDENTIFICATION_CODE]
            ,[ASSET_TYPE]
            ,[BLOOMBERG_COMPANY_ID]
@@ -106,7 +106,7 @@ INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
      VALUES
            (2147000 -- <TOP_LEVEL_RUN_ID, int,>
            ,2147001 -- <MASTER_TOP_LEVEL_RUN_ID, int,>
-           ,1000 -- <PPA_SEC_ID, int,>
+           ,1000 -- <SEC_ID, int,>
            ,'OA' -- <APIR_IDENTIFICATION_CODE, varchar(9),>
            ,'OB' -- <ASSET_TYPE, varchar(10),>
            ,'OC' -- <BLOOMBERG_COMPANY_ID, varchar(8),>
@@ -207,12 +207,12 @@ INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
            ,GETDATE()
 		)
 
--- PPA_SEC_ID 1001
+-- SEC_ID 1001
 
-INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
+INSERT INTO [dbo].[T_OVERRIDE_SECURITY]
            ([TOP_LEVEL_RUN_ID]
            ,[MASTER_TOP_LEVEL_RUN_ID]
-           ,[PPA_SEC_ID]
+           ,[SEC_ID]
            ,[APIR_IDENTIFICATION_CODE]
            ,[ASSET_TYPE]
            ,[BLOOMBERG_COMPANY_ID]
@@ -315,7 +315,7 @@ INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
      VALUES
            (2148000 -- <TOP_LEVEL_RUN_ID, int,>
            ,2148001 -- <MASTER_TOP_LEVEL_RUN_ID, int,>
-           ,1001 -- <PPA_SEC_ID, int,>
+           ,1001 -- <SEC_ID, int,>
            ,'PA' -- <APIR_IDENTIFICATION_CODE, varchar(9),>
            ,'PB' -- <ASSET_TYPE, varchar(10),>
            ,'PC' -- <BLOOMBERG_COMPANY_ID, varchar(8),>
@@ -416,12 +416,12 @@ INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
            ,GETDATE()
 		)
 
--- PPA_SEC_ID 1002
+-- SEC_ID 1002
 
-INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
+INSERT INTO [dbo].[T_OVERRIDE_SECURITY]
            ([TOP_LEVEL_RUN_ID]
            ,[MASTER_TOP_LEVEL_RUN_ID]
-           ,[PPA_SEC_ID]
+           ,[SEC_ID]
            ,[APIR_IDENTIFICATION_CODE]
            ,[ASSET_TYPE]
            ,[BLOOMBERG_COMPANY_ID]
@@ -524,7 +524,7 @@ INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
      VALUES
            (2149000 -- <TOP_LEVEL_RUN_ID, int,>
            ,2149001 -- <MASTER_TOP_LEVEL_RUN_ID, int,>
-           ,1002 -- <PPA_SEC_ID, int,>
+           ,1002 -- <SEC_ID, int,>
            ,'QA' -- <APIR_IDENTIFICATION_CODE, varchar(9),>
            ,'QB' -- <ASSET_TYPE, varchar(10),>
            ,'QC' -- <BLOOMBERG_COMPANY_ID, varchar(8),>
@@ -625,9 +625,9 @@ INSERT INTO [dbo].[T_PPA_OVERRIDE_SECURITY]
            ,GETDATE()
 		)
 
--- SELECT * FROM dbo.T_PPA_OVERRIDE_SECURITY WHERE PPA_SEC_ID BETWEEN 1000 AND 1007
+-- SELECT * FROM dbo.T_OVERRIDE_SECURITY WHERE SEC_ID BETWEEN 1000 AND 1007
 
--- DELETE dbo.T_PPA_OVERRIDE_SECURITY WHERE PPA_SEC_ID BETWEEN 1000 AND 1007
+-- DELETE dbo.T_OVERRIDE_SECURITY WHERE SEC_ID BETWEEN 1000 AND 1007
 
 GO
 

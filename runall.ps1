@@ -18,7 +18,7 @@ Else {
 
     # Run all scripts in child directories.
     $result = @()
-    GetFiles -Path $Path -Include "\.ps1" | foreach { 
+    Get-Files -Path $Path -Include "\.ps1" | foreach { 
         "Running " + $_ | Out-Host
         $parent = Split-Path -Path $_ -Parent
         Set-Location -Path $parent

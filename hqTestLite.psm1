@@ -23,8 +23,66 @@ if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
 	Pop-Location # get back to the current location, counteracting the side effect of importing SqlServer	
 }
 
+function Confirm-File {
+    [CmdletBinding(SupportsShouldProcess = $True)]
+	Param(
+		[string][Parameter(Mandatory = $True)] $FilePath,
+		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
+		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
+		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
+		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
+		[string]$TestName
+	)
 
-function GetFiles {
+    # Init result object.
+	$result = @{
+		Time = $stopWatch.Elapsed.TotalMilliseconds
+		Name = $TestName
+	}
+
+    # If result file doesn't exist...
+    if (-not(Test-Path $FilePath)) {
+		$result.Status = "FAILED"
+        $result.Reason = "Result file `"$($FilePath)`" does not exist."
+    }
+
+    # ... else if certified result file doesn't exist...
+    elseif (-not(Test-Path $CertifiedFilePath)) {
+		$result.Status = "FAILED"
+        $result.Reason = "Certified result file `"$($CertifiedFilePath)`" does not exist."
+    }
+
+    # ... else produce result.
+    else {
+        # Complete result object.
+		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
+		$result.Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
+
+		if ($result.Status -eq "FAILED") {
+			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
+
+            # Visualize diff if not suppressed.
+	        if (-not($SuppressTextDiffPopup) -and -not($Global:NoInput)) {
+                $params = @()
+                foreach ($param in $TextDiffParams) {
+                    $param = $param -replace "{CurrentResult}", $FilePath
+                    $param = $param -replace "{CertifiedResult}", $CertifiedFilePath
+                    $params += $param
+                }
+
+                "Displaying difference between actual & certified results." | Write-Verbose  
+                if ($PSCmdlet.ShouldProcess("Text Diff")) {& $TextDiffExe $params}
+                else {"`"$($TextDiffExe)`" $params" | Out-Host}
+            }
+		}
+    }
+
+    # Return result.
+	return New-Object PSObject -Property $result
+}
+
+# Returns a list of files under a path that optionally match Regex patterns for inclusion or exclusion.
+function Get-Files {
     Param(
         [string]$Path = $pwd, 
         [string[]]$Include, 
@@ -37,7 +95,7 @@ function GetFiles {
     {
         if (Test-Path $item.FullName -PathType Container) 
         {
-            GetFiles $item.FullName $include $exclude
+            Get-Files $item.FullName $include $exclude
             continue
         } 
 
@@ -51,19 +109,84 @@ function GetFiles {
     return $files
 }
 
-function Show-Execution {
-    Param(
-        [string]$Message = "",
-        [PSObject]$Result
-    )
+function Export-CsvTestData {
+	Param(
+        [string]$DbServer = $Global:EnvMedmDbServer,
+        
+        [string]$DbName = $Global:EnvMedmDbName,
+        
+        [string]$TableSchema = "dbo",
+        
+		[Parameter(Mandatory = $True)]
+        [string]$TableName,
 
-    If ($Message) { $Message | Out-Host }
+        [PatternAction]$ColNameAction = [PatternAction]::Exclude,
+        
+        [string]$ColNamePattern = "^CADIS_SYSTEM_|.*RUN_?ID",
 
-    If ($Result) { $Result | Out-Host }
+        [Parameter(Mandatory = $True)]
+        [string]$CsvPath,
 
-    If ($Global:NoInput) { return }
+        [int]$RowCount = 10,
 
-    [void](Read-Host "Press Enter to continue") 
+        [datetime]$MinDate = [datetime]::ParseExact("2018-01-01", "yyyy-MM-dd", $null),
+
+        [datetime]$MaxDate = [datetime]::ParseExact("2027-12-31", "yyyy-MM-dd", $null),
+
+        [decimal]$MinDec = 0.0,
+
+        [decimal]$MaxDec = 10.0,
+
+        [int]$MinInt = 1000,
+
+        [int]$MaxInt = 9999,
+
+        [int]$MaxStrLen = 32
+	)
+
+    $Sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}'" -f $TableSchema, $TableName
+
+    $Columns = Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql
+    $Rows = @()
+
+    For ($i = 0; $i -lt $RowCount; $i++) {
+        $Row = New-Object –TypeName PSObject
+
+        $Columns | where { -not($_.COLUMN_NAME -match $ColNamePattern) }  | foreach {
+            $Column = $_
+
+            If (-not( `
+                (($ColNameAction -eq [PatternAction]::Exclude) -and -not($Column.COLUMN_NAME -match $ColNamePattern)) `
+                -or (($ColNameAction -eq [PatternAction]::Include) -and ($Column.COLUMN_NAME -match $ColNamePattern)) `
+            )) { continue }
+
+            switch -Regex ($Column.DATA_TYPE) {
+                "bit" { $Value = Get-Random -Minimum 0 -Maximum 2 }
+
+                ".*char" { 
+                    $StrLen = $(@($(If ($Column.CHARACTER_MAXIMUM_LENGTH -eq -1) { $MaxStrLen } Else { $Column.CHARACTER_MAXIMUM_LENGTH }), $MaxStrLen) | measure -Minimum).Minimum
+                    $Value = -join((65..90) <# + (97..122) #> | Get-Random -Count $StrLen | % {[char]$_}) 
+                }
+
+                "date.*|.*time2?" { 
+                    $Ticks = Get-Random -Minimum $MinDate.Ticks -Maximum ($MaxDate.Ticks + 1)
+                    $Value = New-Object DateTime($Ticks)
+                }
+
+                "decimal" { $Value = Get-Random -Minimum $MinDec -Maximum $MaxDec }
+
+                "int" { $Value = Get-Random -Minimum $MinInt -Maximum ($MaxInt + 1) }
+
+                default { $Value = $Column.DATA_TYPE }
+            }
+
+            $Row | Add-Member -MemberType NoteProperty -Name $_.COLUMN_NAME -Value $Value
+        }
+
+        $Rows += $Row
+    }
+
+    $Rows | Export-Csv -Path $CsvPath -Encoding Unicode -NoTypeInformation
 }
 
 function Import-CsvTable {
@@ -92,62 +215,6 @@ function Import-CsvTable {
     }
 
     Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql
-}
-
-function Invoke-SqlScripts {
-    [CmdletBinding(SupportsShouldProcess = $True)]
-
-    Param(
-        [string]$DbServer = $Global:EnvMedmDbServer,
-
-        [string]$DbName = $Global:EnvMedmDbServer,
-
-        [string]$SqlDir = $null,
-
-        [Parameter(Mandatory = $True)]
-        [string]$SqlFiles,
-
-        [string]$OutputPath = $null,
-
-		[switch]$OutputTable,
- 
-        [string]$ScriptType = $Global:DefaultSqlScriptType
-   )
-    # Default $SqlDir to current location.
-    if (-Not $SqlDir) {$SqlDir = Get-Location}
-    # Iterate through $Sql list & execute each in turn.
-    if ($SqlFiles) {
-		"Beginning $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
-        Push-Location
-        if ($OutputPath) { "" | Out-File -FilePath $OutputPath }
-        $SqlFiles.Split(",") | ForEach {
-            $SqlPath = Join-Path -Path $SqlDir -ChildPath $_
-            if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
-                $Extension = (Get-Item $SqlPath).Extension
-                if ($Extension.ToLower() -eq ".csv") {
-                    $ScriptType = "CSV File"
-
-                    Import-CsvTable -DbServer $DbServer -DbName $DbName -CsvPath $SqlPath
-                }
-                else {
-                    if ($OutputPath) { 
-                        "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
-					    if ($OutputTable) {
-						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
-					    }
-					    else {
-						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
-					    }
-                    }
-                    else { 
-                        Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 
-                    }
-                }
-            }
-        }
-        Pop-Location
-        "Completed $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
-    }
 }
 
 function Invoke-MedmComponent {
@@ -208,62 +275,186 @@ function Invoke-MedmComponent {
 
 }
 
-function Confirm-File {
+function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True)]
+
+    Param(
+        [string]$DbServer = $Global:EnvMedmDbServer,
+
+        [string]$DbName = $Global:EnvMedmDbServer,
+
+        [string]$SqlDir = $null,
+
+        [Parameter(Mandatory = $True)]
+        [string]$SqlFiles,
+
+        [string]$OutputPath = $null,
+
+		[switch]$OutputTable,
+ 
+        [string]$ScriptType = $Global:DefaultSqlScriptType
+   )
+    # Default $SqlDir to current location.
+    if (-Not $SqlDir) {$SqlDir = Get-Location}
+    # Iterate through $Sql list & execute each in turn.
+    if ($SqlFiles) {
+		"Beginning $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
+        Push-Location
+        if ($OutputPath) { "" | Out-File -FilePath $OutputPath }
+        $SqlFiles.Split(",") | ForEach {
+            $SqlPath = Join-Path -Path $SqlDir -ChildPath $_
+            if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
+                $Extension = (Get-Item $SqlPath).Extension
+                if ($Extension.ToLower() -eq ".csv") {
+                    $ScriptType = "CSV File"
+
+                    Import-CsvTable -DbServer $DbServer -DbName $DbName -CsvPath $SqlPath
+                }
+                else {
+                    if ($OutputPath) { 
+                        "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
+					    if ($OutputTable) {
+						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+					    }
+					    else {
+						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+					    }
+                    }
+                    else { 
+                        Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 
+                    }
+                }
+            }
+        }
+        Pop-Location
+        "Completed $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
+    }
+}
+
+function Publish-Results {
 	Param(
-		[string][Parameter(Mandatory = $True)] $FilePath,
-		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
-		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
-		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
-		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
-		[string]$TestName
+		[string]$ReportFolder = $Global:DefaultReportFolder,
+		[Parameter(Mandatory = $True)]
+		[string]$TestSuiteName,
+		[Parameter(Mandatory = $True)]
+		[Object[]]$Results,
+		[ValidateSet("JUnit")]
+		[string]$ReportFormat = "JUnit"
 	)
 
-    # Init result object.
-	$result = @{
-		Time = $stopWatch.Elapsed.TotalMilliseconds
-		Name = $TestName
-	}
+	if ($ReportFormat -eq "JUnit") {
+		$template = @'
+<testsuite name="" tests="" failures="" timestamp="" time="" package="hqTestLite">
+<testcase classname="" name="" time="">
+    <failure type="" message=""/>
+</testcase>
+</testsuite>
+'@
 
-    # If result file doesn't exist...
-    if (-not(Test-Path $FilePath)) {
-		$result.Status = "FAILED"
-        $result.Reason = "Result file `"$($FilePath)`" does not exist."
-    }
+		# load XML template 
+		$xml = New-Object xml		
+		$xml.LoadXml($template)
+		$newTestCaseTemplate = (@($xml.testsuite.testcase)[0]).Clone()  
 
-    # ... else if certified result file doesn't exist...
-    elseif (-not(Test-Path $CertifiedFilePath)) {
-		$result.Status = "FAILED"
-        $result.Reason = "Certified result file `"$($CertifiedFilePath)`" does not exist."
-    }
+		# populate suite-level attributes
+		$xml.testsuite.name = $TestSuiteName
+		$xml.testsuite.tests = $Results.Count.ToString()
+		$xml.testsuite.timestamp = (Get-Date -Format u).ToString()
+		$totalTime = ($Results | Measure-Object -Property Time -Sum).Sum
+		$xml.testsuite.time = "{0:c}" -f ([TimeSpan]::FromMilliseconds($totalTime))
+		$xml.testsuite.failures = ($Results | Where-Object {$_.Status -eq "FAILED"} | Measure-Object).Count.ToString()
 
-    # ... else produce result.
-    else {
-        # Complete result object.
-		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
-		$result.Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
+		# populate test-level attributes
+		foreach($result in $Results) 
+		{   
+		    $newTestCase = $newTestCaseTemplate.clone()
+		    $newTestCase.classname = $TestSuiteName
 
-		if ($result.Status -eq "FAILED") {
-			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
+			$newTestCase.name = $result.Name.ToString()
+			$newTestCase.time = "{0:c}" -f ([TimeSpan]::FromMilliseconds($result.Time))
 
-            # Visualize diff if not suppressed.
-	        if (-not($SuppressTextDiffPopup)) {
-                $params = @()
-                foreach ($param in $TextDiffParams) {
-                    $param = $param -replace "{CurrentResult}", $FilePath
-                    $param = $param -replace "{CertifiedResult}", $CertifiedFilePath
-                    $params += $param
-                }
 
-                "Displaying difference between actual & certified results." | Write-Verbose  
-                if ($PSCmdlet.ShouldProcess("Text Diff")) {& $TextDiffExe $params}
-                else {"`"$($TextDiffExe)`" $params" | Out-Host}
-            }
+		    if($result.Status -eq "PASSED")
+		    {   #Remove the failure node, since this is a success
+		        $newTestCase.RemoveChild($newTestCase.failure) | Out-Null
+		    }
+		    else
+		    {
+				$newTestCase.failure.type = "hqTestLite.Fail"
+				#$newTestCase.failure.InnerText = Format-ErrorRecord $result.Reason
+		        $newTestCase.failure.message = $result.Reason 
+		    }
+		    $xml.testsuite.AppendChild($newTestCase) > $null
+		}   
+
+		# remove test case template
+		$xml.testsuite.testcase | Where-Object { $_.Name -eq "" } | ForEach-Object  { [void]$xml.testsuite.RemoveChild($_) }
+
+		# save xml to file
+		if(!(Test-Path -Path $ReportFolder )){
+			New-Item -ItemType directory -Path $ReportFolder # ensure folder exists
 		}
+		$path = "$($ReportFolder)\$($TestSuiteName)_junit_results.xml"
+		$originalPath = $path
+		$i = 0;
+		while (Test-Path $path) {
+			$i++
+			$extension = $originalPath.Split(".")[-1];
+			$path = $originalPath.Replace(".$($extension)", "_$($i).$($extension)") # don't overwrite any earlier files that were part of the same Test Suite; instead make it Filename_1.xml, Filename_2.xml, etc
+		}
+		$xml.Save($path)
+
+		return $path
+	}
+}
+
+function Read-UserEntry {
+    Param(
+        [Parameter(Mandatory = $True)]
+        [string]$Label,
+
+        [string]$Default,
+
+        [string]$Pattern = ".+"
+    )
+
+    while (!$Result) {
+        Write-Host ("`n" + $Label.ToUpper())
+        Write-Host "Pattern: $Pattern"
+        If ($Default) { 
+            Write-Host "Default: $Default"
+            If (($Result = Read-Host "New value or Enter to accept default") -eq "") { $Result = $Default }
+        }
+        Else { $Result = Read-Host "Enter value" }
+
+        If ($Result -inotmatch $Pattern) {
+            Write-Host "Failed pattern match!" -ForegroundColor Magenta
+            $Result = $null
+            continue
+        }
+
+        Write-Host ($Label + ": ") -NoNewline
+        Write-Host $Result -ForegroundColor Yellow
     }
 
-    # Return result.
-	return New-Object PSObject -Property $result
+    return $Result
+}
+
+function Show-Execution {
+    Param(
+        [Parameter(Mandatory = $True)]
+        [PSObject]$Result,
+
+        [string]$Message = ""
+    )
+
+    If ($Message) { $Message | Out-Host }
+
+    If ($Result) { $Result | Out-Host }
+
+    If ($Global:NoInput) { return }
+
+    [void](Read-Host "Press Enter to continue") 
 }
 
 function Test-MedmComponent {
@@ -364,196 +555,6 @@ function Test-MedmComponent {
 		-TextDiffParams $TextDiffParams
 
 	return $result
-}
-
-function Publish-Results {
-	Param(
-		[string]$ReportFolder = $Global:DefaultReportFolder,
-		[Parameter(Mandatory = $True)]
-		[string]$TestSuiteName,
-		[Parameter(Mandatory = $True)]
-		[Object[]]$Results,
-		[ValidateSet("JUnit")]
-		[string]$ReportFormat = "JUnit"
-	)
-
-	if ($ReportFormat -eq "JUnit") {
-		$template = @'
-<testsuite name="" tests="" failures="" timestamp="" time="" package="hqTestLite">
-<testcase classname="" name="" time="">
-    <failure type="" message=""/>
-</testcase>
-</testsuite>
-'@
-
-		# load XML template 
-		$xml = New-Object xml		
-		$xml.LoadXml($template)
-		$newTestCaseTemplate = (@($xml.testsuite.testcase)[0]).Clone()  
-
-		# populate suite-level attributes
-		$xml.testsuite.name = $TestSuiteName
-		$xml.testsuite.tests = $Results.Count.ToString()
-		$xml.testsuite.timestamp = (Get-Date -Format u).ToString()
-		$totalTime = ($Results | Measure-Object -Property Time -Sum).Sum
-		$xml.testsuite.time = "{0:c}" -f ([TimeSpan]::FromMilliseconds($totalTime))
-		$xml.testsuite.failures = ($Results | Where-Object {$_.Status -eq "FAILED"} | Measure-Object).Count.ToString()
-
-		# populate test-level attributes
-		foreach($result in $Results) 
-		{   
-		    $newTestCase = $newTestCaseTemplate.clone()
-		    $newTestCase.classname = $TestSuiteName
-
-			$newTestCase.name = $result.Name.ToString()
-			$newTestCase.time = "{0:c}" -f ([TimeSpan]::FromMilliseconds($result.Time))
-
-
-		    if($result.Status -eq "PASSED")
-		    {   #Remove the failure node, since this is a success
-		        $newTestCase.RemoveChild($newTestCase.failure) | Out-Null
-		    }
-		    else
-		    {
-				$newTestCase.failure.type = "hqTestLite.Fail"
-				#$newTestCase.failure.InnerText = Format-ErrorRecord $result.Reason
-		        $newTestCase.failure.message = $result.Reason 
-		    }
-		    $xml.testsuite.AppendChild($newTestCase) > $null
-		}   
-
-		# remove test case template
-		$xml.testsuite.testcase | Where-Object { $_.Name -eq "" } | ForEach-Object  { [void]$xml.testsuite.RemoveChild($_) }
-
-		# save xml to file
-		if(!(Test-Path -Path $ReportFolder )){
-			New-Item -ItemType directory -Path $ReportFolder # ensure folder exists
-		}
-		$path = "$($ReportFolder)\$($TestSuiteName)_junit_results.xml"
-		$originalPath = $path
-		$i = 0;
-		while (Test-Path $path) {
-			$i++
-			$extension = $originalPath.Split(".")[-1];
-			$path = $originalPath.Replace(".$($extension)", "_$($i).$($extension)") # don't overwrite any earlier files that were part of the same Test Suite; instead make it Filename_1.xml, Filename_2.xml, etc
-		}
-		$xml.Save($path)
-
-		return $path
-	}
-}
-
-function Export-CsvTestData {
-	Param(
-        [string]$DbServer = $Global:EnvMedmDbServer,
-        
-        [string]$DbName = $Global:EnvMedmDbName,
-        
-        [string]$TableSchema = "dbo",
-        
-		[Parameter(Mandatory = $True)]
-        [string]$TableName,
-
-        [PatternAction]$ColNameAction = [PatternAction]::Exclude,
-        
-        [string]$ColNamePattern = "^CADIS_SYSTEM_|.*RUN_?ID",
-
-        [Parameter(Mandatory = $True)]
-        [string]$CsvPath,
-
-        [int]$RowCount = 10,
-
-        [datetime]$MinDate = [datetime]::ParseExact("2018-01-01", "yyyy-MM-dd", $null),
-
-        [datetime]$MaxDate = [datetime]::ParseExact("2027-12-31", "yyyy-MM-dd", $null),
-
-        [decimal]$MinDec = 0.0,
-
-        [decimal]$MaxDec = 10.0,
-
-        [int]$MinInt = 1000,
-
-        [int]$MaxInt = 9999,
-
-        [int]$MaxStrLen = 32
-	)
-
-    $Sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}'" -f $TableSchema, $TableName
-
-    $Columns = Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql
-    $Rows = @()
-
-    For ($i = 0; $i -lt $RowCount; $i++) {
-        $Row = New-Object –TypeName PSObject
-
-        $Columns | where { -not($_.COLUMN_NAME -match $ColNamePattern) }  | foreach {
-            $Column = $_
-
-            If (-not( `
-                (($ColNameAction -eq [PatternAction]::Exclude) -and -not($Column.COLUMN_NAME -match $ColNamePattern)) `
-                -or (($ColNameAction -eq [PatternAction]::Include) -and ($Column.COLUMN_NAME -match $ColNamePattern)) `
-            )) { continue }
-
-            switch -Regex ($Column.DATA_TYPE) {
-                "bit" { $Value = Get-Random -Minimum 0 -Maximum 2 }
-
-                ".*char" { 
-                    $StrLen = $(@($(If ($Column.CHARACTER_MAXIMUM_LENGTH -eq -1) { $MaxStrLen } Else { $Column.CHARACTER_MAXIMUM_LENGTH }), $MaxStrLen) | measure -Minimum).Minimum
-                    $Value = -join((65..90) <# + (97..122) #> | Get-Random -Count $StrLen | % {[char]$_}) 
-                }
-
-                "date.*|.*time2?" { 
-                    $Ticks = Get-Random -Minimum $MinDate.Ticks -Maximum ($MaxDate.Ticks + 1)
-                    $Value = New-Object DateTime($Ticks)
-                }
-
-                "decimal" { $Value = Get-Random -Minimum $MinDec -Maximum $MaxDec }
-
-                "int" { $Value = Get-Random -Minimum $MinInt -Maximum ($MaxInt + 1) }
-
-                default { $Value = $Column.DATA_TYPE }
-            }
-
-            $Row | Add-Member -MemberType NoteProperty -Name $_.COLUMN_NAME -Value $Value
-        }
-
-        $Rows += $Row
-    }
-
-    $Rows | Export-Csv -Path $CsvPath -Encoding Unicode -NoTypeInformation
-}
-
-
-function Read-UserEntry {
-    Param(
-        [Parameter(Mandatory = $True)]
-        [string]$Label,
-
-        [string]$Default,
-
-        [string]$Pattern = ".+"
-    )
-
-    while (!$Result) {
-        Write-Host ("`n" + $Label.ToUpper())
-        Write-Host "Pattern: $Pattern"
-        If ($Default) { 
-            Write-Host "Default: $Default"
-            If (($Result = Read-Host "New value or Enter to accept default") -eq "") { $Result = $Default }
-        }
-        Else { $Result = Read-Host "Enter value" }
-
-        If ($Result -inotmatch $Pattern) {
-            Write-Host "Failed pattern match!" -ForegroundColor Magenta
-            $Result = $null
-            continue
-        }
-
-        Write-Host ($Label + ": ") -NoNewline
-        Write-Host $Result -ForegroundColor Yellow
-    }
-
-    return $Result
 }
 
 Pop-Location

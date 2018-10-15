@@ -25,19 +25,20 @@ Other features:
   * [Changing Environments](#changing-environments)
 - [Key Files and Directories](#key-files-and-directories)
 - [Global Variables](#global-variables)
-  * [Global Variable Reference](#global-variable-reference)
 - [Cmdlets](#cmdlets)
+  * [Confirm-File](#confirm-file)
   * [Export-CsvTestData](#export-csvtestdata)
   * [Import-CsvTable](#import-csvtable)
-  * [Invoke-SqlScripts](#invoke-sqlscripts)
   * [Invoke-MedmComponent](#invoke-medmcomponent)
-  * [Confirm-File](#confirm-file)
-  * [Test-MedmComponent](#test-medmcomponent)
+  * [Invoke-SqlScripts](#invoke-sqlscripts)
   * [Publish-Results](#publish-results)
   * [Read-UserEntry](#read-userentry)
+  * [Show-Execution](#show-execution)
+  * [Test-MedmComponent](#test-medmcomponent)
 - [Scripts](#scripts)
   * [cert.ps1](#certps1)
   * [GenerateTestData.ps1](#generatetestdataps1)
+  * [runall.ps1](#runallps1)
 - [Database Objects](#database-objects)
   * [dbo.UDF_PPA_Core_Rows](#dboudf-ppa-core-rows)
   * [dbo.UDF_PPA_Core_Split_Delimiter](#dboudf-ppa-core-split-delimiter)
@@ -48,9 +49,10 @@ Other features:
 First thing is to get hqTestLite installed. If it is already in use in your organization, some of this may already be done. Do that parts that are not.
 
 1. Clone this repository into a shared directory that is accessible to your whole development team.
+1. Copy script *env_config_template.ps1* to *env_config.ps1* and configure it with relevant environment settings.
 1. Run the scripts in the [*DB*](https://github.com/HexisData/hqTestLite/tree/parametric/DB) directory in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code. Note that the *Dump_Data* stored procedure will be called by most of your test result scripts, so be sure to propagate any changes there as well!
 1. Copy the [*Test*](https://github.com/HexisData/hqTestLite/tree/parametric/Test) directory into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
-1. From the [*Local*](https://github.com/HexisData/hqTestLite/tree/parametric/Local) directory, copy the *hqTestLite* folder into the root of your C: drive. *This is important!* Your test scripts will be looking for the *config.ps1* configuration script in this directory, and it must be in the same local location for each user!
+1. From the [*Local*](https://github.com/HexisData/hqTestLite/tree/parametric/Local) directory, copy the *hqTestLite* folder into the root of your C: drive. *This is important!* Your test scripts will be looking for the *local_config.ps1* configuration script in this directory, and it must be in the same local location for each user!
 
 Now you are ready to run a test.
 
@@ -93,7 +95,7 @@ Install-Module -Name SqlServer
 
 ## Markit EDM
 
-By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, please add the following line to your local *config.ps1* configuration script:
+By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, please add the following line to your *local_config.ps1* configuration script:
 
 ```powershell
 $Global:DefaultMedmProcessAgentPath = "<path to MEDM exe>\CadisProcessAgent.exe"
@@ -105,7 +107,7 @@ $Global:DefaultMedmProcessAgentPath = "<path to MEDM exe>\CadisProcessAgent.exe"
 
 **hqTestLite** uses [WinMerge](http://winmerge.org) as its text comparison engine. If you don't already have it, please download and install WinMerge from [SourceForge](https://sourceforge.net/projects/winmerge)
 
-**hqTestLite** expects WinMerge to reside in its default installation directory. If you have elected to install WinMerge in a different directory, please add the following line to your local *config.ps1* configuration script:
+**hqTestLite** expects WinMerge to reside in its default installation directory. If you have elected to install WinMerge in a different directory, please add the following line to your *local_config.ps1* configuration script:
 
 ```powershell
 $Global:DefaultTextDiffExe = "<path to WinMerge exe>\WinMergeU.exe"
@@ -115,22 +117,30 @@ $Global:DefaultTextDiffExe = "<path to WinMerge exe>\WinMergeU.exe"
 
 ## Changing Environments
 
-By default, your tests will be executed against the DEV database. To execute in a different environment, edit the following lines in your local *config.ps1* configuration script:
+Environment-specific values are managed centrally in script *env_config.ps1*. The active testing environment is selected with an edit to *local_config.ps1*:
 
 ```powershell
-$Global:DefaultMedmDbServer = "<MEDM DB Server>"
-$Global:DefaultMedmDbName = "<MEDM DB Name>"
+# Set active environment. Valid values: DEV, TMP.
+$Global:ActiveEnvironment = "DEV"
 ```
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Key Files and Directories
+# Key Files and Directories
 
-**cert.ps1** &ndash; Target of the CERTIFY shortcut. Copies file *abc.xyz* to file *abc.certfied.xyz*.
+**+CERTIFY shortcut** &ndash; Drop a result file on this shortcut to certify it.
 
-**CERTIFY shortcut** &ndash; Drop a result file on this shortcut to certify it.
+**+RUNALL shortcut** &ndash; Drop a directory on this shortcut execute all PowerShell scripts inside it.
+
+**cert.ps1** &ndash; Target of the +CERTIFY shortcut. Copies file *abc.xyz* to file *abc.certfied.xyz*.
+
+**env_config_template.ps1** &ndash; Should be copied and maintained as *env_config.ps1*. Central repository for shared environment configurations.
+
+**GenerateTestData.ps1** &ndash; Generates a CSV file of random test data based on a DB table schema.
 
 **hqTestLite.psm1** &ndash; hqTestLite PowerShell module.
+
+**runall.ps1** &ndash; Target of the +RUNALL shortcut. Recursively executes all .PS1 scripts within a directory.
 
 **DB directory** &ndash; Database objects to be installed in every environment to be tested.
 
@@ -138,29 +148,29 @@ $Global:DefaultMedmDbName = "<MEDM DB Name>"
 
 * **hqTestLite directory** &ndash; Copy this entire directory to the local C drive root. 
 
-  * **config.ps1** &ndash; Local environment configuration file.
+  * **local_config.ps1** &ndash; Local environment configuration script.
   
 **Test directory** &ndash; Sample test repository. Copy this into source control and use it as a starting point.
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Global Variables
+# Global Variables
 
 The hqTestLite module creates a number of global variables, whose default values are set directly in *hqTestLite.psm1*. 
 
 A number of scenarios require these values to be overridden at the local level, for example so that one developer might run his tests in environment other than DEV.
 
-To override a global variable in your local environment, simply copy the variable definition from *hqTestLite.psm1* to your local *config.ps1* file and set it to the desired value. For example, to shift test execution from the DEV to the TEMP environment, add:
+Environment-specific variables are centrally managed in *env_config.ps1*. To select an active testing environment, set `$Global:ActiveEnvironment` in *local_config.ps1*.
+
+To override a global variable in your local environment, simply copy the variable definition from *hqTestLite.psm1* to your *local_config.ps1* file and set it to the desired value. For example, to shift test execution from the DEV to the TEMP environment, add:
 ```powershell
 $Global:DefaultMedmDbName = "MarkitEDM_TMP"
 ```
+To create a new global variable, simply add it to *env_config.ps1*. If necessary, override its value locally in *local_config.ps1*.
 
-[Back to Top](#welcome-to-hqtestlite)
-
-## Global Variable Reference
-
-| Variable | Description | Default Value |
+| Global Variable | Description | Default Value |
 |:--|:--|:--|
+| ActiveEnvironment | Sets the environment against which tests will be executed. Leverages shared script *env_config.ps1* to set relevant global variables. | `"DEV"` |
 | DefaultMedmProcessAgentPath | The local path to the MEDM Process Agent executable. This path will vary based on the MEDM version in use. Should be consistent across the team. | `"C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe"`|
 | DefaultMedmDbServer | The SQL Server of the MEDM environment against which the test will execute. | `"markitedmdevdb.eatonvance.com"` |
 | DefaultMedmDbName | The SQL Server database name of the MEDM environment against which the test will execute. | `"MarkitEDM"` |
@@ -172,7 +182,38 @@ $Global:DefaultMedmDbName = "MarkitEDM_TMP"
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Cmdlets
+# Cmdlets
+
+hqTestLite features the following cmdlets. Most are used internally, but any may be used in your test scripts or elsewhere.
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Confirm-File
+
+Performs file validation. Pops up the diff tool on completion, and writes out test results in JUnit format. *Confirm-File* is useful in the case where you have multiple files output by the process under test. You can call *Invoke-MedmComponent* and then call *Confirm-File* multiple times (once per file output from the process). 
+
+Internally, *Test-MedmComponent* calls *Confirm-File* to validate the test results with a certified file. 
+
+**Syntax**
+
+```powershell
+Confirm-File `
+	-FilePath <string> `
+	-CertifiedFilePath <string> `
+	[-SuppressTextDiffPopup] `
+	[-TextDiffExe <string>] `
+	[-TextDiffParams <string[]>] `
+	[-TestName <string>]
+```
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -FilePath | Required. Current test result file. Relative paths will be resolved relative to the current directory.<br /><br />Ex: `-FilePath "Result.txt"` |
+| -CertifiedFilePath | Required. Certified test result file. Relative paths will be resolved relative to the current directory.<br /><br />Ex: `-CertifiedFilePath "Result.certified.txt"` |
+| -SuppressTextDiffPopup | Switch. If present, prevents the text comparison engine from being invoked in the event of a failed test. Useful for automated regression testing. Defaults to the value of `$Global:DefaultSuppressTextDiffPopup`.<br /><br />Ex: `-SuppressTextDiffPopup` |
+| -TextDiffExe | Optional. The local path to your text comparison engine's executable (WinMerge by default). Defaults to the value of `$Global:DefaultTextDiffExe`.<br /><br />Ex:`-TextDiffExe "C:\Program Files (x86)\WinMerge\WinMergeU.exe"` |
+| -TextDiffParams | Optional. An array of strings representing the text comparison engine's command-line parameters. Tokens `{CurrentResult}` and `{CertfiedResult}` will be replaced by the relevant file names. Defaults to the value of `$Global:DefaultTextDiffParams`. <br /><br />Ex: `-TextDiffParams @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}"`) |
 
 [Back to Top](#welcome-to-hqtestlite)
 
@@ -255,39 +296,6 @@ Import-CsvTable `
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Invoke-SqlScripts
-
-Executes an ordered list of SQL scripts located in the same directory. Optionally collects their outputs into a text file.
-
-If a file in the list has a .CSV extension, then it will be executed as a set of INSERT statements with the as described in the *Import-CsvTable* cmdlet documentation above.
-
-**Syntax**
-
-```powershell
-Invoke-SqlScripts `
-    [-DbServer <string>] `
-    [-DbName <string>] `
-    [-SqlDir <string>] `
-    -SqlFiles <string> `
-    [-OutputPath <string>] `
-    [-OutputTable] `
-    [-ScriptType <string>]
-```
-
-**Parameters**
-
-| Parameter | Description                                                  |
-| --------- | ------------------------------------------------------------ |
-| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
-| -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
-| -SqlDir   | Optional. The directory containing the SQL scripts to be executed. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory.<br /><br />Ex: `-SqlDir "./ResultSql"` |
-| -SqlFiles | Required. A comma-delimited list of SQL script files to be executed. All files must be located within the directory indicated by `-SqlDir`.<br /><br />Ex: `-SqlFiles "T_PREMASTER_SEC.sql,T_MASTER_SEC.csv"` |
-| -OutputPath | Optional. If set, indicates the single text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. <br /><br />Ex: `-OutputPath "Result.txt"` |
-| -OutputTable | Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. <br /><br />Ex: `-OutputTable` |
-| -ScriptType | Optional. Differentiates different script types in conjunction with the `-Verbose` and `-WhatIf` switches. Defaults to the value of `$Global:DefaultSqlScriptType`. <br /><br />Ex: `-ScriptType "Sql Script"` |
-
-[Back to Top](#welcome-to-hqtestlite)
-
 ## Invoke-MedmComponent
 
 Executes a Markit EDM Component. Optionally executes a set of SQL setup scripts prior to Component execution, and a set of cleanup scripts after Component execution.
@@ -324,32 +332,108 @@ Invoke-MedmComponent `
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Confirm-File
+## Invoke-SqlScripts
 
-Performs file validation. Pops up the diff tool on completion, and writes out test results in JUnit format. *Confirm-File* is useful in the case where you have multiple files output by the process under test. You can call *Invoke-MedmComponent* and then call *Confirm-File* multiple times (once per file output from the process). 
+Executes an ordered list of SQL scripts located in the same directory. Optionally collects their outputs into a text file.
 
-Internally, *Test-MedmComponent* calls *Confirm-File* to validate the test results with a certified file. 
+If a file in the list has a .CSV extension, then it will be executed as a set of INSERT statements with the as described in the *Import-CsvTable* cmdlet documentation above.
 
 **Syntax**
 
 ```powershell
-Confirm-File `
-	-FilePath <string> `
-	-CertifiedFilePath <string> `
-	[-SuppressTextDiffPopup] `
-	[-TextDiffExe <string>] `
-	[-TextDiffParams <string[]>] `
-	[-TestName <string>]
+Invoke-SqlScripts `
+    [-DbServer <string>] `
+    [-DbName <string>] `
+    [-SqlDir <string>] `
+    -SqlFiles <string> `
+    [-OutputPath <string>] `
+    [-OutputTable] `
+    [-ScriptType <string>]
+```
+
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
+| -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
+| -SqlDir   | Optional. The directory containing the SQL scripts to be executed. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory.<br /><br />Ex: `-SqlDir "./ResultSql"` |
+| -SqlFiles | Required. A comma-delimited list of SQL script files to be executed. All files must be located within the directory indicated by `-SqlDir`.<br /><br />Ex: `-SqlFiles "T_PREMASTER_SEC.sql,T_MASTER_SEC.csv"` |
+| -OutputPath | Optional. If set, indicates the single text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. <br /><br />Ex: `-OutputPath "Result.txt"` |
+| -OutputTable | Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. <br /><br />Ex: `-OutputTable` |
+| -ScriptType | Optional. Differentiates different script types in conjunction with the `-Verbose` and `-WhatIf` switches. Defaults to the value of `$Global:DefaultSqlScriptType`. <br /><br />Ex: `-ScriptType "Sql Script"` |
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Publish-Results
+
+Produces a report showing pass/fail status of tests in a standard test results reporting format. Currently supports JUnit.
+
+**Syntax**
+
+```
+Publish-Results `
+    [-ReportFolder <string>] `
+    -TestSuiteName <string> `
+    -Results <Object[]> `
+    [-ReportFormat <string>]
 ```
 **Parameters**
 
 | Parameter | Description                                                  |
 | --------- | ------------------------------------------------------------ |
-| -FilePath | Required. Current test result file. Relative paths will be resolved relative to the current directory.<br /><br />Ex: `-FilePath "Result.txt"` |
-| -CertifiedFilePath | Required. Certified test result file. Relative paths will be resolved relative to the current directory.<br /><br />Ex: `-CertifiedFilePath "Result.certified.txt"` |
-| -SuppressTextDiffPopup | Switch. If present, prevents the text comparison engine from being invoked in the event of a failed test. Useful for automated regression testing. Defaults to the value of `$Global:DefaultSuppressTextDiffPopup`.<br /><br />Ex: `-SuppressTextDiffPopup` |
-| -TextDiffExe | Optional. The local path to your text comparison engine's executable (WinMerge by default). Defaults to the value of `$Global:DefaultTextDiffExe`.<br /><br />Ex:`-TextDiffExe "C:\Program Files (x86)\WinMerge\WinMergeU.exe"` |
-| -TextDiffParams | Optional. An array of strings representing the text comparison engine's command-line parameters. Tokens `{CurrentResult}` and `{CertfiedResult}` will be replaced by the relevant file names. Defaults to the value of `$Global:DefaultTextDiffParams`. <br /><br />Ex: `-TextDiffParams @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}"`) |
+| -ReportFolder | Optional. Points to the folder that should contain the generated report. If omitted, defaults to `$Global:DefaultReportFolder`.<br /><br />Ex: `-ReportFolder "C:\hqTestLite\Results"` |
+| -TestSuiteName | Required. The name of the test suite. Can be whatever string value you choose.<br /><br />Ex: `-TestSuiteName "Load Tests"` |
+| -Results | Required. An array containing test results objects returned from calls to `Test-MedmComponent`. <br /><br />Ex: `-Results $MyResults` |
+| -ReportFormat | Optional. The desired report format. Defaults to `"JUnit"`.<br /><br />Ex: `-ReportFormat "JUnit"` |
+
+**Returns**
+
+A string value containing the path to the report file.
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Read-UserEntry
+
+This is a utility cmdlet that captures input from the user and validates it against a regex pattern. If a default value is provided, the user can accept it by pressing Enter.
+
+**Syntax**
+
+```powershell
+Read-UserEntry `
+	-Label <string> `
+	[-Default <string>] `
+	[-Pattern <string>]
+```
+
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -Label | Required. Identifies the data being captured to the user.<br /><br />Ex: `-Label "Height Above Sea Level"` |
+| -Default | Optional. Default value, which the user can accept by pressing the Enter key.<br /><br />Ex: `-Default "0"` |
+| -Pattern | Optional. Regex pattern against user input will be evaluated. Defaults to ".\*" <br /><br />Ex: `-Pattern "\d+"` |
+
+[Back to Top](#welcome-to-hqtestlite)
+
+## Show-Execution
+
+Displays test execution output and optionally pauses for a user keypress.
+
+**Syntax**
+
+```powershell
+Read-UserEntry `
+	-Result <PSObject> `
+	[-Message <string>]
+```
+
+**Parameters**
+
+| Parameter | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| -Result | Test result object.<br /><br />Ex: `-Result $result ` |
+| -Message | Optional. Message to be displayed following test execution.<br /><br />Ex: `-Message "Test complete!" ` |
 
 [Back to Top](#welcome-to-hqtestlite)
 
@@ -425,58 +509,7 @@ An object with the following properties:
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Publish-Results
-
-Produces a report showing pass/fail status of tests in a standard test results reporting format. Currently supports JUnit.
-
-**Syntax**
-
-```
-Publish-Results `
-    [-ReportFolder <string>] `
-    -TestSuiteName <string> `
-    -Results <Object[]> `
-    [-ReportFormat <string>]
-```
-**Parameters**
-
-| Parameter | Description                                                  |
-| --------- | ------------------------------------------------------------ |
-| -ReportFolder | Optional. Points to the folder that should contain the generated report. If omitted, defaults to `$Global:DefaultReportFolder`.<br /><br />Ex: `-ReportFolder "C:\hqTestLite\Results"` |
-| -TestSuiteName | Required. The name of the test suite. Can be whatever string value you choose.<br /><br />Ex: `-TestSuiteName "Load Tests"` |
-| -Results | Required. An array containing test results objects returned from calls to `Test-MedmComponent`. <br /><br />Ex: `-Results $MyResults` |
-| -ReportFormat | Optional. The desired report format. Defaults to `"JUnit"`.<br /><br />Ex: `-ReportFormat "JUnit"` |
-
-**Returns**
-
-A string value containing the path to the report file.
-
-[Back to Top](#welcome-to-hqtestlite)
-
-## Read-UserEntry
-
-This is a utility cmdlet that captures input from the user and validates it against a regex pattern. If a default value is provided, the user can accept it by pressing Enter.
-
-**Syntax**
-
-```powershell
-Read-UserEntry `
-	-Label <string> `
-	[-Default <string>] `
-	[-Pattern <string>]
-```
-
-**Parameters**
-
-| Parameter | Description                                                  |
-| --------- | ------------------------------------------------------------ |
-| -Label | Required. Identifies the data being captured to the user.<br /><br />Ex: `-Label "Height Above Sea Level"` |
-| -Default | Optional. Default value, which the user can accept by pressing the Enter key.<br /><br />Ex: `-Default "0"` |
-| -Pattern | Optional. Regex pattern against user input will be evaluated. Defaults to ".\*" <br /><br />Ex: `-Pattern "\d+"` |
-
-[Back to Top](#welcome-to-hqtestlite)
-
-## Scripts
+# Scripts
 
 The hqTestLite repository contains a number of scripts that provide utility functions or leverage the module in useful ways.
 
@@ -484,7 +517,7 @@ The hqTestLite repository contains a number of scripts that provide utility func
 
 ## cert.ps1
 
-This script powers the CERTIFY shortcut in the main directory of the repository. When a user drops a file onto this shortcut, the *cert.ps1* creates a copy of the file in the same location, with ".certified" inserted at the end of the file name and before the extension.
+This script powers the +CERTIFY shortcut in the main directory of the repository. When a user drops a file onto this shortcut, the *cert.ps1* creates a copy of the file in the same location, with ".certified" inserted at the end of the file name and before the extension.
 
 For example, *Result.txt* would generate *Result.certified.txt*.
 
@@ -496,7 +529,13 @@ This script generates a CSV of test data based on a database table schema, with 
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Database Objects
+## runall.ps1
+
+This script powers the +RUNALL shortcut in the main directory of the repository. When a user drops a directory onto this shortcut, all .PS1 scripts inside the directory are executed with recursion.
+
+[Back to Top](#welcome-to-hqtestlite)
+
+# Database Objects
 
 The DB directory contains a number of database objects intended to assist in the extraction of test results.
 
@@ -543,5 +582,3 @@ This stored procedure dynamically selects data from a table or a view. It is the
 | @OrderBy| nvarchar(max) | NULL | Optional. Column list that will be applied to the query in an ORDER BY clause. |
 
 [Back to Top](#welcome-to-hqtestlite)
-
-## 

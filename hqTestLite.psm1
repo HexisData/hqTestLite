@@ -509,6 +509,7 @@ function Test-MedmComponent {
 
     # Invoke setup scripts and MEDM component.
     if (-not($SkipProcess)) {
+        Write-Host "Now Writing: $ProcessAgentPath"
         Invoke-MedmComponent `
             -ProcessAgentPath $ProcessAgentPath `
             -DbServer $DbServer `

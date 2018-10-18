@@ -38,10 +38,24 @@ else
 # BEGIN
 Write-Host "`nThank you for installing hqTestLite!"
 
+# Check PS Version
+Write-Host "`nChecking PowerShell version..."
+Write-Host "Current PowerShell version: $($PSVersionTable.PSVersion.ToString())"
+
+$MinPSVersion = 3
+If ($PSVersionTable.PSVersion.Major -ge $MinPSVersion) {
+    Write-Host "No change required."
+}
+Else {
+	Write-Host "ERROR: hqTestLite requires Powershell version $MinPSVersion or better!" -ForegroundColor Yellow
+	[void](Read-Host "`nPress Enter to exit")
+	Exit
+}	
+
 # Check execution policy.
 Write-Host "`nChecking execution policy..."
 $CurrentExecutionPolicy = (Get-ExecutionPolicy).ToString()
-"Current Execution Policy: $CurrentExecutionPolicy"
+Write-Host "Current Execution Policy: $CurrentExecutionPolicy"
 
 If (("Unrestricted", "Bypass").Contains($CurrentExecutionPolicy)) {
     Write-Host "No change required."

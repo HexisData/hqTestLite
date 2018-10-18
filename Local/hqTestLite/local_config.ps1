@@ -18,4 +18,4 @@ $Global:ModuleDir = "{{ModuleDir}}"
 
 # Set active environment. Valid values: DEV, TMP.
 $Global:ActiveEnvironment = "DEV"
-Invoke-Expression "$ModuleDir\env_config.ps1"
+Invoke-Expression "$ModuleDir\shared_config.ps1"

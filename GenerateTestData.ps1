@@ -1,11 +1,8 @@
-﻿# Locate the hqTestLite module in a central repository to make it easy to upgrade.
-Import-Module "\\paraport\resources\EnterpriseData\hqTestLite\hqTestLite.psm1" -Force
+﻿# Load & configure hqTestLite.
+Invoke-Expression "C:\hqTestLite\local_config.ps1"
 
-# Get -DbServer & -DbName for DEV environment.
-Invoke-Expression "C:\hqTestLite\config.ps1"
-
-$DbServer = Read-UserEntry -Label "Database Server" -Default $Global:DefaultMedmDbServer
-$DbName = Read-UserEntry -Label "Database Name" -Default $Global:DefaultMedmDbName
+$DbServer = Read-UserEntry -Label "Database Server" -Default $EnvMedmDbServer
+$DbName = Read-UserEntry -Label "Database Name" -Default $EnvMedmDbName
 $TableSchema = Read-UserEntry -Label "Table Schema" -Default "dbo"
 $TableName = Read-UserEntry -Label "Table Name"
 $ColNamePattern = Read-UserEntry -Label "Column Name Exclusion Pattern" -Default "^CADIS_SYSTEM_|.*RUN_?ID" -Pattern ".*"
@@ -21,7 +18,7 @@ $MaxStrLen = Read-UserEntry -Label "Max String Length" -Default "32" -Pattern "\
 
 Export-CsvTestData `
     -DbServer $DbServer `
-    -DbName $Global:DefaultMedmDbName `
+    -DbName $DbName `
     -TableSchema $TableSchema `
     -TableName $TableName `
     -ColNameAction Exclude `

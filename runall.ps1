@@ -2,19 +2,16 @@ param (
     $Path
 )
 
-# Locate hqTestLite.
-$ModuleDir = "\\paraport\resources\EnterpriseData\hqTestLite"
-
 If (!$Path) {
     Write-Host "To execute all .PS1 scripts in a directory with recursion, simply drag & drop `nthe directory on the +RUN ALL SCRIPTS shortcut. Feel free to copy the shortcut `nto any convenient location." 
 }
 
 Else {
     # Load & configure hqTestLite.
-    Import-Module "$ModuleDir\hqTestLite.psm1" -Force
+    Invoke-Expression "C:\hqTestLite\local_config.ps1"
 
-    $NoInput = $Global:NoInput
-    $Global:NoInput = $true
+    $GlobalNoInput = $NoInput
+    $NoInput = $true
 
     # Run all scripts in child directories.
     $result = @()
@@ -25,7 +22,7 @@ Else {
         $result += (& $_) 
     }
  
-    $Global:NoInput = $NoInput
+    $NoInput = $GlobalNoInput
 
     Write-Host "All scripts executed!"
 }

@@ -1,29 +1,42 @@
-﻿function Is-Installed( $program ) {
-    
-    $x86 = ((Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall") |
-        Where-Object { $_.GetValue( "DisplayName" ) -like "*$program*" } ).Length -gt 0;
+﻿# Self-elevating PS script: https://blogs.msdn.microsoft.com/virtual_pc_guy/2010/09/23/a-self-elevating-powershell-script/
 
-    $x64 = ((Get-ChildItem "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall") |
-        Where-Object { $_.GetValue( "DisplayName" ) -like "*$program*" } ).Length -gt 0;
-
-    return $x86 -or $x64;
+# Get the ID and security principal of the current user account
+$myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+$myWindowsPrincipal = new-object System.Security.Principal.WindowsPrincipal($myWindowsID)
+ 
+# Get the security principal for the Administrator role
+$adminRole = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+ 
+# Check to see if we are currently running "as Administrator"
+if ($myWindowsPrincipal.IsInRole($adminRole))
+{
+    # We are running "as Administrator" - so change the title and background color to indicate this
+    $Host.UI.RawUI.WindowTitle = $myInvocation.MyCommand.Definition + " (Elevated)"
+    $Host.UI.RawUI.BackgroundColor = "DarkBlue"
+    clear-host
 }
-
-
+else
+{
+    # We are not running "as Administrator" - so relaunch as administrator
+   
+    # Create a new process object that starts PowerShell
+    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
+   
+    # Specify the current script path and name as a parameter
+    $newProcess.Arguments = $myInvocation.MyCommand.Definition;
+   
+    # Indicate that the process should be elevated
+    $newProcess.Verb = "runas";
+   
+    # Start the new process
+    [System.Diagnostics.Process]::Start($newProcess);
+   
+    # Exit from the current, unelevated, process
+    exit
+}
+ 
 # BEGIN
 Write-Host "`nThank you for installing hqTestLite!"
-
-# Validate admin privileges.
-Write-Host "`nValidating admin privileges..."
-$RunningAsAdmin = [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")
-If ($RunningAsAdmin) {
-    Write-Host "You are running with admin privileges!"
-}
-Else {
-    Write-Host "ERROR: This script must be run with admin priveleges."
-    [void](Read-Host "`nPress Enter to exit")
-    Exit
-}
 
 # Check execution policy.
 Write-Host "`nChecking execution policy..."
@@ -54,7 +67,18 @@ Else {
 # Check WinMerge installation.
 Write-Host "`nChecking WinMerge installation..."
 
-If ($false) { #Is-Installed "WinMerge") {
+function Is-Installed( $program ) {
+    
+    $x86 = ((Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall") |
+        Where-Object { $_.GetValue( "DisplayName" ) -like "*$program*" } ).Length -gt 0;
+
+    $x64 = ((Get-ChildItem "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall") |
+        Where-Object { $_.GetValue( "DisplayName" ) -like "*$program*" } ).Length -gt 0;
+
+    return $x86 -or $x64;
+}
+
+If (Is-Installed "WinMerge") {
     Write-Host "WinMerge is already installed!"
 }
 Else {
@@ -75,6 +99,7 @@ If (Test-Path $LocalConfigPath -PathType Leaf) {
 Else {
     Write-Host "Creating $LocalConfigPath..."
     Copy-Item -Path "$PSScriptRoot/../Local/hqTestLite" -Destination (Split-Path $LocalConfigPath -Parent) -Recurse
+    (Get-Content $LocalConfigPath).replace("{{ModuleDir}}", (Split-Path $PSScriptRoot -Parent)) | Set-Content $LocalConfigPath
     Write-Host "Done!"
 }
 

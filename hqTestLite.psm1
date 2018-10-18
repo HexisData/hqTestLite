@@ -1,11 +1,3 @@
-$Global:DefaultLocalConfigPath = "C:\hqTestLite\local_config.ps1"
-$Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe"
-$Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe"
-$Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}")
-$Global:DefaultSuppressTextDiffPopup = $false
-$Global:DefaultSqlScriptType = "Sql Script"
-$Global:DefaultReportFolder = "C:\hqTestLite\Results"
-
 Add-Type -TypeDefinition @"
    public enum PatternAction
    {
@@ -28,9 +20,9 @@ function Confirm-File {
 	Param(
 		[string][Parameter(Mandatory = $True)] $FilePath,
 		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
-		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
-		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
-		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
+		[bool]$SuppressTextDiffPopup = $DefaultSuppressTextDiffPopup,
+		[string]$TextDiffExe = $DefaultTextDiffExe,
+		[string[]]$TextDiffParams = $DefaultTextDiffParams,
 		[string]$TestName
 	)
 
@@ -62,11 +54,11 @@ function Confirm-File {
 			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
 
             # Visualize diff if not suppressed.
-	        if (-not($SuppressTextDiffPopup) -and -not($Global:NoInput)) {
+	        if (-not($SuppressTextDiffPopup) -and -not($NoInput)) {
                 $params = @()
                 foreach ($param in $TextDiffParams) {
-                    $param = $param -replace "{CurrentResult}", $FilePath
-                    $param = $param -replace "{CertifiedResult}", $CertifiedFilePath
+                    $param = $param -replace "{{CurrentResult}}", $FilePath
+                    $param = $param -replace "{{CertifiedResult}}", $CertifiedFilePath
                     $params += $param
                 }
 
@@ -111,9 +103,9 @@ function Get-Files {
 
 function Export-CsvTestData {
 	Param(
-        [string]$DbServer = $Global:EnvMedmDbServer,
+        [string]$DbServer = $EnvMedmDbServer,
         
-        [string]$DbName = $Global:EnvMedmDbName,
+        [string]$DbName = $EnvMedmDbName,
         
         [string]$TableSchema = "dbo",
         
@@ -193,9 +185,9 @@ function Import-CsvTable {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
-        [string]$DbServer = $Global:EnvMedmDbServer,
+        [string]$DbServer = $EnvMedmDbServer,
 
-        [string]$DbName = $Global:EnvMedmDbName,
+        [string]$DbName = $EnvMedmDbName,
 
         [Parameter(Mandatory = $True)]
         [string]$CsvPath
@@ -220,11 +212,11 @@ function Import-CsvTable {
 function Invoke-MedmComponent {
         [CmdletBinding(SupportsShouldProcess = $True)]
 	    Param(
-        [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
+        [string]$ProcessAgentPath = $DefaultMedmProcessAgentPath,
 
-        [string]$DbServer = $Global:EnvMedmDbServer,
+        [string]$DbServer = $EnvMedmDbServer,
 
-        [string]$DbName = $Global:EnvMedmDbName,
+        [string]$DbName = $EnvMedmDbName,
 
         [string]$SetupSqlDir = $null,
 
@@ -279,9 +271,9 @@ function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
-        [string]$DbServer = $Global:EnvMedmDbServer,
+        [string]$DbServer = $EnvMedmDbServer,
 
-        [string]$DbName = $Global:EnvMedmDbServer,
+        [string]$DbName = $EnvMedmDbServer,
 
         [string]$SqlDir = $null,
 
@@ -292,7 +284,7 @@ function Invoke-SqlScripts {
 
 		[switch]$OutputTable,
  
-        [string]$ScriptType = $Global:DefaultSqlScriptType
+        [string]$ScriptType = $DefaultSqlScriptType
    )
     # Default $SqlDir to current location.
     if (-Not $SqlDir) {$SqlDir = Get-Location}
@@ -333,7 +325,7 @@ function Invoke-SqlScripts {
 
 function Publish-Results {
 	Param(
-		[string]$ReportFolder = $Global:DefaultReportFolder,
+		[string]$ReportFolder = $DefaultReportFolder,
 		[Parameter(Mandatory = $True)]
 		[string]$TestSuiteName,
 		[Parameter(Mandatory = $True)]
@@ -452,7 +444,7 @@ function Show-Execution {
 
     If ($Result) { $Result | Out-Host }
 
-    If ($Global:NoInput) { return }
+    If ($NoInput) { return }
 
     [void](Read-Host "Press Enter to continue") 
 }
@@ -461,11 +453,11 @@ function Test-MedmComponent {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
-        [string]$ProcessAgentPath = $Global:DefaultMedmProcessAgentPath,
+        [string]$ProcessAgentPath = $DefaultMedmProcessAgentPath,
 
-		[string]$DbServer = $Global:EnvMedmDbServer,
+		[string]$DbServer = $EnvMedmDbServer,
 
-		[string]$DbName = $Global:EnvMedmDbName,
+		[string]$DbName = $EnvMedmDbName,
 
 		[string]$SetupSqlDir = $null,
 
@@ -493,13 +485,13 @@ function Test-MedmComponent {
 
 		[string]$CertifiedResultPath = $null,
 
-		[string]$TextDiffExe = $Global:DefaultTextDiffExe,
+		[string]$TextDiffExe = $DefaultTextDiffExe,
 
-		[string[]]$TextDiffParams = $Global:DefaultTextDiffParams,
+		[string[]]$TextDiffParams = $DefaultTextDiffParams,
 
 		[switch]$OutputTable,
 
-		[bool]$SuppressTextDiffPopup = $Global:DefaultSuppressTextDiffPopup,
+		[bool]$SuppressTextDiffPopup = $DefaultSuppressTextDiffPopup,
 
 		[string]$TestName,
 

@@ -5,7 +5,7 @@
 
 # If you want to use another text comparison tool instead of WinMerge.
 # $Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe"
-# $Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}")
+# $Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{{CurrentResult}}", "{{CertifiedResult}}")
 
 # If you would rather not see a text diff by default.
 # $Global:DefaultSuppressTextDiffPopup = $false
@@ -14,7 +14,8 @@
 # $Global:DefaultReportFolder = "C:\hqTestLite\Results"
 
 # Shared directory containing hqTestLite module (the GitHub repo clone directory).
-$Global:ModuleDir = "//netshare/project/hqTestLite"
+$Global:ModuleDir = "{{ModuleDir}}"
 
 # Set active environment. Valid values: DEV, TMP.
 $Global:ActiveEnvironment = "DEV"
+Invoke-Expression "$ModuleDir\env_config.ps1"

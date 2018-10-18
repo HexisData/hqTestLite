@@ -54,7 +54,7 @@ Else {
 # Check WinMerge installation.
 Write-Host "`nChecking WinMerge installation..."
 
-If ($false) { #Is-Installed "WinMerge") {
+If (Is-Installed "WinMerge") {
     Write-Host "WinMerge is already installed!"
 }
 Else {

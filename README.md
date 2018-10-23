@@ -49,12 +49,12 @@ Other features:
 First thing is to get hqTestLite installed. If it is already in use in your organization, some of this may already be done. Do that parts that are not.
 
 1. Clone this repository into a shared directory that is accessible to your whole development team.
-1. Copy script *env_config_template.ps1* to *env_config.ps1* and configure it with relevant environment settings.
+1. Copy script *shared_config_template.ps1* to *shared_config.ps1* and configure it with relevant environment settings.
 1. Run the scripts in the [*DB*](https://github.com/HexisData/hqTestLite/tree/parametric/DB) directory in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code. Note that the *Dump_Data* stored procedure will be called by most of your test result scripts, so be sure to propagate any changes there as well!
 1. Copy the [*Test*](https://github.com/HexisData/hqTestLite/tree/parametric/Test) directory into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
-1. From the [*Local*](https://github.com/HexisData/hqTestLite/tree/parametric/Local) directory, copy the *hqTestLite* folder into the root of your C: drive. *This is important!* Your test scripts will be looking for the *local_config.ps1* configuration script in this directory, and it must be in the same local location for each user!
+1. From the [*Install*](https://github.com/HexisData/hqTestLite/tree/master/Install) directory, run the +INSTALL shortcut.
 
-Now you are ready to run a test.
+Now you are ready to run a test!
 
 1. Clone a code repository containing tests to your local machine and find the *Test* directory. Navigate into one of the test folders and open a test script: it should be obvious what is going to be tested. Now right-click on the test script file and select *Run with  PowerShell*. 
 1. Once text execution completes, find file *Result.txt* in the test directory. Open the file and scrutinize the test result. Is it what it should be?
@@ -134,22 +134,27 @@ $Global:ActiveEnvironment = "DEV"
 
 **cert.ps1** &ndash; Target of the +CERTIFY shortcut. Copies file *abc.xyz* to file *abc.certfied.xyz*.
 
-**env_config_template.ps1** &ndash; Should be copied and maintained as *env_config.ps1*. Central repository for shared environment configurations.
-
 **GenerateTestData.ps1** &ndash; Generates a CSV file of random test data based on a DB table schema.
 
 **hqTestLite.psm1** &ndash; hqTestLite PowerShell module.
 
 **runall.ps1** &ndash; Target of the +RUNALL shortcut. Recursively executes all .PS1 scripts within a directory.
 
+**shared_config_template.ps1** &ndash; Should be copied and maintained as *shared_config.ps1*. Central repository for shared and environment-specific configurations.
+
 **DB directory** &ndash; Database objects to be installed in every environment to be tested.
+
+**Install directory** &ndash; Local installation script & artifacts.
+
+* **+INSTALL shortcut** &ndash; Double-click this shortcut to install & configure **hqTestLite** on your local machine. *You must have local admin privileges to do this!*
+* **install.ps1** &ndash; Target of the +INSTALL shortcut. Configures local system & installs local config file.
+* **WinMerge-2.14.0-Setup.exe** &ndash; WinMerge installer.
 
 **Local directory** &ndash; Files to be copied to each user's local system.
 
-* **hqTestLite directory** &ndash; Copy this entire directory to the local C drive root. 
+* **hqTestLite directory** &ndash; This entire directory will be copied to the local C drive root by the install script. 
+  * **local_config.ps1** &ndash; Local environment configuration script. The install script will replace the *{{ModuleDir}}* token with the repo directory from which you are running it.
 
-  * **local_config.ps1** &ndash; Local environment configuration script.
-  
 **Test directory** &ndash; Sample test repository. Copy this into source control and use it as a starting point.
 
 [Back to Top](#welcome-to-hqtestlite)

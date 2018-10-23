@@ -251,9 +251,10 @@ function Invoke-MedmComponent {
     if ($SolutionParams) {$params = $params + " /parameters:`"" + $SolutionParams.Replace(":", "`":`"").Replace("=", "`"=`"") + "`""}
 
 	# Execute MEDM solution.
-    "Beginning execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
-    if ($PSCmdlet.ShouldProcess("MEDM Solution $($SolutionName)")) {& $ProcessAgentPath $params  | Write-Host }
-    "Completed execution of MEDM Solution `"$($SolutionName)`" on database $($DbServer)\$($DbName)" | Write-Verbose  
+    "`nBeginning execution of MEDM $($ComponentType) `"$($ComponentName)`" on DB $($DbServer)\$($DbName)" | Write-Host  
+    "`nEXECUTING $($ProcessAgentPath) $($params)`n" | Write-Host
+    if ($PSCmdlet.ShouldProcess("MEDM $($ComponentType) $($ComponentName)")) {& $ProcessAgentPath $params  | Write-Host }
+    "Completed execution of MEDM $($ComponentType) `"$($ComponentName)`" on DB $($DbServer)\$($DbName)`n" | Write-Host  
 
     # Invoke cleanup scripts.
     if ($CleanupSqlFiles) {
@@ -290,7 +291,7 @@ function Invoke-SqlScripts {
     if (-Not $SqlDir) {$SqlDir = Get-Location}
     # Iterate through $Sql list & execute each in turn.
     if ($SqlFiles) {
-		"Beginning $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
+		"`nBeginning $($ScriptType) execution against DB $($DbServer)\$($DbName)`n" | Write-Host
         Push-Location
         if ($OutputPath) { "" | Out-File -FilePath $OutputPath }
         $SqlFiles.Split(",") | ForEach {
@@ -298,11 +299,13 @@ function Invoke-SqlScripts {
             if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
                 $Extension = (Get-Item $SqlPath).Extension
                 if ($Extension.ToLower() -eq ".csv") {
-                    $ScriptType = "CSV File"
+                    "  Importing CSV File `"$($SqlPath)`"" | Write-Host
 
                     Import-CsvTable -DbServer $DbServer -DbName $DbName -CsvPath $SqlPath
                 }
                 else {
+                    "  Executing $($ScriptType) `"$($SqlPath)`"" | Write-Host
+
                     if ($OutputPath) { 
                         "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
 					    if ($OutputTable) {
@@ -319,7 +322,7 @@ function Invoke-SqlScripts {
             }
         }
         Pop-Location
-        "Completed $($ScriptType) execution against database $($DbServer)\$($DbName)" | Write-Verbose
+        "`nCompleted $($ScriptType) execution against DB $($DbServer)\$($DbName)" | Write-Host
     }
 }
 
@@ -440,7 +443,7 @@ function Show-Execution {
         [string]$Message = ""
     )
 
-    If ($Message) { $Message | Out-Host }
+    If ($Message) { "`n$($Message)" | Out-Host }
 
     If ($Result) { $Result | Out-Host }
 
@@ -501,7 +504,6 @@ function Test-MedmComponent {
 
     # Invoke setup scripts and MEDM component.
     if (-not($SkipProcess)) {
-        Write-Host "Now Writing: $ProcessAgentPath"
         Invoke-MedmComponent `
             -ProcessAgentPath $ProcessAgentPath `
             -DbServer $DbServer `

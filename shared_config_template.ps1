@@ -20,6 +20,7 @@ If (!$DefaultReportFolder) { $Global:DefaultReportFolder = "C:\hqTestLite\Result
 If (!$NoInput) { $Global:NoInput = $false }
 
 # Specify per-environment settings here.
+"Active Environment: $($ActiveEnvironment)" | Write-Host
 switch ($ActiveEnvironment) {
     "DEV" {
         $Global:EnvMedmDbServer = "DevServerName"

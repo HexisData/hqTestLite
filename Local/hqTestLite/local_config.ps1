@@ -2,8 +2,10 @@
 $Global:ModuleDir = "{{ModuleDir}}"
 
 # Execute tests without user input.
-$Global:NoInput = {{NoInput}}
+If (!$NoInput) { $Global:NoInput = {{NoInput}} }
 
 # Set active environment. Valid values: DEV, TMP.
-$Global:ActiveEnvironment = "DEV"
+If (!$ActiveEnvironment) { $Global:ActiveEnvironment = "DEV" }
+
+# Load shared config.
 Invoke-Expression "$ModuleDir\shared_config.ps1"

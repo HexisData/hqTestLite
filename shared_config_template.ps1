@@ -19,6 +19,9 @@ If (!$DefaultReportFolder) { $Global:DefaultReportFolder = "C:\hqTestLite\Result
 # Execute tests with user input by default.
 If (!$NoInput) { $Global:NoInput = $false }
 
+# Active Environment.
+If (!$ActiveEnvironment) { $Global:ActiveEnvironment = "DEV" }
+
 # Specify per-environment settings here.
 "Active Environment: $($ActiveEnvironment)" | Write-Host
 switch ($ActiveEnvironment) {

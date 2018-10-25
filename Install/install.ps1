@@ -34,7 +34,10 @@ else
     # Exit from the current, unelevated, process
     exit
 }
- 
+
+$ModuleDir = Split-Path $PSScriptRoot -Parent
+$LocalConfigPath = "C:/hqTestLite/local_config.ps1"
+
 # BEGIN
 Write-Host "`nThank you for installing hqTestLite!"
 
@@ -106,14 +109,19 @@ Else {
 # Check local config file.
 Write-Host "`nChecking local config file..."
 
-$LocalConfigPath = "C:/hqTestLite/local_config.ps1"
 If (Test-Path $LocalConfigPath -PathType Leaf) {
     Write-Host "$LocalConfigPath already exists!"
 }
 Else {
     Write-Host "Creating $LocalConfigPath..."
+    Invoke-Expression "$ModuleDir\shared_config.ps1"
+ 
     Copy-Item -Path "$PSScriptRoot/../Local/hqTestLite" -Destination (Split-Path $LocalConfigPath -Parent) -Recurse
-    (Get-Content $LocalConfigPath).replace("{{ModuleDir}}", (Split-Path $PSScriptRoot -Parent)) | Set-Content $LocalConfigPath
+    (Get-Content $LocalConfigPath).replace("{{ModuleDir}}", $ModuleDir) | Set-Content $LocalConfigPath
+
+    $NoInputStr = "`$" + ($(Read-UserEntry -Label "Suppress all user input for unattended testing?" -Default "N" -Pattern "Y|N") -eq "Y").ToString()
+    (Get-Content $LocalConfigPath).replace("{{NoInput}}", $NoInputStr) | Set-Content $LocalConfigPath
+
     Write-Host "Done!"
 }
 

@@ -177,8 +177,8 @@ To create a new global variable, simply add it to *env_config.ps1*. If necessary
 |:--|:--|:--|
 | ActiveEnvironment | Sets the environment against which tests will be executed. Leverages shared script *env_config.ps1* to set relevant global variables. | `"DEV"` |
 | DefaultMedmProcessAgentPath | The local path to the MEDM Process Agent executable. This path will vary based on the MEDM version in use. Should be consistent across the team. | `"C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe"`|
-| DefaultMedmDbServer | The SQL Server of the MEDM environment against which the test will execute. | `"markitedmdevdb.eatonvance.com"` |
-| DefaultMedmDbName | The SQL Server database name of the MEDM environment against which the test will execute. | `"MarkitEDM"` |
+| DefaultMedmDbServer | The SQL Server of the MEDM environment against which the test will execute. | `"DbServer"` |
+| DefaultMedmDbName | The SQL Server database name of the MEDM environment against which the test will execute. | `"DbName"` |
 | DefaultTextDiffExe | The local path to your text comparison engine's executable (WinMerge by default). | `"C:\Program Files (x86)\WinMerge\WinMergeU.exe"` |
 | DefaultTextDiffParams | An array of strings representing the text comparison engine's command-line parameters. Tokens `{CurrentResult}` and `{CertfiedResult}` will be replaced by the relevant file names. | `@("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{CurrentResult}", "{CertifiedResult}"`) |
 | DefaultSuppressTextDiffPopup | When `$true`, this switch prevents the text comparison engine from being invoked in the event of a failed test. Useful for automated regression testing. | `$false` |
@@ -325,8 +325,8 @@ Invoke-MedmComponent `
 | Parameter | Description                                                  |
 | --------- | ------------------------------------------------------------ |
 | -ProcessAgentPath | Optional. Path to command line executable for target MEDM version. Defaults to the value of `$Global:DefaultMedmProcessAgentPath`. <br /><br />Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CadisProcessAgent.exe"` |
-| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`. <br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
-| -DbName | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MarkitEDM"` |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`. <br /><br />Ex: `-DbServer "DbServer"` |
+| -DbName | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "DbName"` |
 | -SetupSqlDir | Optional. A directory containing SQL scripts to be executed prior to component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-SetupSqlDir ".\SetupSql"` |
 | -SetupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed prior to component invocation. All must be located within the directory indicated by `-SetupSqlDir`. <br /><br />Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"` |
 | -ComponentName | Required. The name of the MEDM component to be executed. <br /><br />Ex: `-ComponentName "My Solution"` |
@@ -360,7 +360,7 @@ Invoke-SqlScripts `
 
 | Parameter | Description                                                  |
 | --------- | ------------------------------------------------------------ |
-| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`.<br /><br />Ex: `-DbServer "DbServer"` |
 | -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
 | -SqlDir   | Optional. The directory containing the SQL scripts to be executed. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory.<br /><br />Ex: `-SqlDir "./ResultSql"` |
 | -SqlFiles | Required. A comma-delimited list of SQL script files to be executed. All files must be located within the directory indicated by `-SqlDir`.<br /><br />Ex: `-SqlFiles "T_PREMASTER_SEC.sql,T_MASTER_SEC.csv"` |
@@ -484,13 +484,13 @@ Test-MedmComponent `
 | Parameter | Description                                                  |
 | --------- | ------------------------------------------------------------ |
 | -ProcessAgentPath | Optional. Path to command line executable for target MEDM version. Defaults to the value of `$Global:DefaultMedmProcessAgentPath`. <br /><br />Ex: `-ProcessAgentPath "C:\Program Files\Markit Group\Markit EDM_10_5_3_1\CadisProcessAgent.exe"` |
-| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`. <br /><br />Ex: `-DbServer "markitedmdevdb.eatonvance.com"` |
-| -DbName | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "MarkitEDM"` |
+| -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:DefaultMedmDbServer`. <br /><br />Ex: `-DbServer "DbServer"` |
+| -DbName | Optional. The target SQL Server database name. Defaults to the value of `$Global:DefaultMedmDbName`.<br /><br />Ex: `-DbName "DbName"` |
 | -SetupSqlDir | Optional. A directory containing SQL scripts to be executed prior to component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-SetupSqlDir ".\SetupSql"` |
 | -SetupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated by `-SetupSqlDir`.<br /><br />Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"` |
 | -ComponentName | Required. The name of the MEDM component to be executed. <br /><br />Ex: `-ComponentName "My Solution"` |
 | -ComponentType | Required. The type of the MEDM component to be executed. One of the following values: DataPorter, DataInspector, DataMatcherProcess, DataConstructor, Solution.<br /><br />Ex: `-ComponentType: "Solution"` |
-| -ConfigurableParams | Optional. A delimited list of MEDM configurable parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". | Ex: `-SolutionParams "param1=value1:param2=value2"` |
+| -ConfigurableParams | Optional. A delimited list of MEDM configurable parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". |
 | -ResultSqlDir | Optional. A directory containing SQL scripts to extract test results after component execution. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-ResultSqlDir ".\ResultSql"` |
 | -ResultSqlFiles | Optional. A comma-delimited list of SQL script files to extract test results after component execution. All must be located within the directory indicated by `-ResultSqlDir`. <br /><br />Ex: `-ResultSqlFiles "MyResultSqlFile1.sql,MyResultSqlFile2.sql"` |
 | -OutputTable | Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. <br /><br />Ex: `-OutputTable` |

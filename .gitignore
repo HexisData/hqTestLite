@@ -6,7 +6,7 @@
 *.suo
 *.user
 *.sln.docstates
-shared_config.ps1
+config.ps1
 
 # Build results
 [Dd]ebug/

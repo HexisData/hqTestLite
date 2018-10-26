@@ -109,9 +109,9 @@ Else {
 # Configure registry.
 Write-Host "`nConfiguring Windows Registry... "
 
-Invoke-Expression "$ModuleDir\config.ps1"
-
 If (!(Test-Path $RegistryPath)) { New-Item -Path $RegistryPath -Force | Out-Null }
+
+Invoke-Expression "$ModuleDir\config.ps1"
 
 Write-Host "`n$RegistryPath\ModuleDir = $ModuleDir"
 New-ItemProperty -Path $RegistryPath -Name "ModuleDir" -Value $ModuleDir -PropertyType String -Force | Out-Null

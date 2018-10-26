@@ -1,4 +1,7 @@
-﻿# Self-elevating PS script: https://blogs.msdn.microsoft.com/virtual_pc_guy/2010/09/23/a-self-elevating-powershell-script/
+﻿param(
+    [string]$ActiveEnvironment,
+    [switch]$NoInput
+)
 
 # Get the ID and security principal of the current user account
 $myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -15,20 +18,17 @@ if ($myWindowsPrincipal.IsInRole($adminRole))
     $Host.UI.RawUI.BackgroundColor = "DarkBlue"
     clear-host
 }
+
 else
 {
     # We are not running "as Administrator" - so relaunch as administrator
-   
-    # Create a new process object that starts PowerShell
     $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
-   
-    # Specify the current script path and name as a parameter
+
     $newProcess.Arguments = $myInvocation.MyCommand.Definition;
-   
-    # Indicate that the process should be elevated
+    if ($ActiveEnvironment) { $newProcess.Arguments += " -ActiveEnvironment $ActiveEnvironment" } 
+    if ($NoInput.IsPresent) { $newProcess.Arguments += " -NoInput" } 
+
     $newProcess.Verb = "runas";
-   
-    # Start the new process
     [System.Diagnostics.Process]::Start($newProcess);
    
     # Exit from the current, unelevated, process
@@ -37,6 +37,10 @@ else
 
 $ModuleDir = Split-Path $PSScriptRoot -Parent
 $RegistryPath = "HKCU:\Software\HexisData\hqTestLite"
+
+
+if ($ActiveEnvironment) { $Global:ActiveEnvironment = $ActiveEnvironment }
+if ($NoInput.IsPresent) { $Global:NoInput = $NoInput.IsPresent }
 
 # BEGIN
 Write-Host "`nThank you for installing hqTestLite!"
@@ -116,18 +120,17 @@ Invoke-Expression "$ModuleDir\config.ps1"
 Write-Host "`n$RegistryPath\ModuleDir = $ModuleDir"
 New-ItemProperty -Path $RegistryPath -Name "ModuleDir" -Value $ModuleDir -PropertyType String -Force | Out-Null
 [Environment]::SetEnvironmentVariable("hqTestLite", $ModuleDir, "Machine")
- 
-$NoInput = ($(Read-UserEntry -Label "Suppress user input for unattended testing" -Default "N" -Pattern "Y|N") -eq "Y")
-Write-Host "`n$RegistryPath\NoInput = $NoInput"
-New-ItemProperty -Path $RegistryPath -Name "NoInput" -Value $NoInput -PropertyType Binary -Force | Out-Null
 
-$ActiveEnvironment = Read-UserEntry -Label "Default active environment" -Default $ActiveEnvironment -Pattern "\w+"
-Write-Host "`n$RegistryPath\ActiveEnvironment = $ActiveEnvironment"
-New-ItemProperty -Path $RegistryPath -Name "ActiveEnvironment" -Value $ActiveEnvironment -PropertyType String -Force | Out-Null
+If (!$NoInput.IsPresent) { $Global:NoInput = ($(Read-UserEntry -Label "Suppress user input for unattended testing" -Default $(If ($Global:NoInput) { "Y" } Else { "N" }) -Pattern "Y|N") -eq "Y") }
+Write-Host "`n$RegistryPath\NoInput = $Global:NoInput"
+New-ItemProperty -Path $RegistryPath -Name "NoInput" -Value $Global:NoInput -PropertyType Binary -Force | Out-Null
+
+If (!$ActiveEnvironment) { $Global:ActiveEnvironment = Read-UserEntry -Label "Default active environment" -Default $Global:ActiveEnvironment -Pattern "\w+" }
+Write-Host "`n$RegistryPath\ActiveEnvironment = $Global:ActiveEnvironment"
+New-ItemProperty -Path $RegistryPath -Name "ActiveEnvironment" -Value $Global:ActiveEnvironment -PropertyType String -Force | Out-Null
 
 Write-Host "Done!"
 
 # END
 Write-Host "`nLocal hqTestLite installation complete!"
-[void](Read-Host "`nPress Enter to exit")
-
+If (!($ActiveEnvironment -and $NoInput.IsPresent)) { [void](Read-Host "`nPress Enter to exit") }

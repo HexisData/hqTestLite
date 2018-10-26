@@ -42,7 +42,7 @@ If (!(Test-Path "variable:global:NoInput")) { $Global:NoInput = $false }
 If (!(Test-Path "variable:global:ActiveEnvironment")) { $Global:ActiveEnvironment = "DEV" }
 
 # Specify per-environment settings here.
-switch ($ActiveEnvironment) {
+switch ($Global:ActiveEnvironment) {
     "DEV" {
         # Database.
         $Global:EnvMedmDbServer = "markitedmdevdb.eatonvance.com"

@@ -1,4 +1,20 @@
-﻿# Set global variables not overridden in local config.
+﻿# Pull global variables from Windows Registry.
+$RegistryPath = "HKCU:\Software\HexisData\hqTestLite"
+Get-Item -Path $RegistryPath | Select-Object -ExpandProperty Property | ForEach-Object {
+    $PropertyName = $_
+    switch -Wildcard ($(Get-ItemPropertyValue -Path $RegistryPath -Name $PropertyName).GetType()) {
+        "byte*" {
+            $PropertyValue = [bool](Get-ItemPropertyValue -Path $RegistryPath -Name $PropertyName)
+        }
+
+        default {
+            $PropertyValue = Get-ItemPropertyValue -Path $RegistryPath -Name $PropertyName
+        }
+    }
+    Set-Variable -Name $PropertyName -Value $PropertyValue -Scope Global
+}
+
+# Set global variables not populated in Windows Registry.
 
 # MEDM installation path.
 If (!$DefaultMedmProcessAgentPath) { $Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe" }
@@ -23,7 +39,6 @@ If (!$NoInput) { $Global:NoInput = $false }
 If (!$ActiveEnvironment) { $Global:ActiveEnvironment = "DEV" }
 
 # Specify per-environment settings here.
-"Active Environment: $($ActiveEnvironment)" | Write-Host
 switch ($ActiveEnvironment) {
     "DEV" {
         $Global:EnvMedmDbServer = "DevServerName"

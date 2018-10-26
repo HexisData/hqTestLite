@@ -8,7 +8,7 @@ If (!$Path) {
 
 Else {
     # Load & configure hqTestLite.
-    Invoke-Expression "C:\hqTestLite\local_config.ps1"
+    Invoke-Expression "$(Get-ItemPropertyValue -Path "HKCU:\Software\HexisData\hqTestLite" -Name "ModuleDir")\config.ps1"
 
     $GlobalNoInput = $NoInput
     $NoInput = $true
@@ -16,10 +16,11 @@ Else {
     # Run all scripts in child directories.
     $result = @()
     Get-Files -Path $Path -Include "\.ps1" | foreach { 
-        "Running " + $_ | Out-Host
-        $parent = Split-Path -Path $_ -Parent
+        $FilePath = $_
+        "Running " + $FilePath | Out-Host
+        $parent = Split-Path -Path $FilePath -Parent
         Set-Location -Path $parent
-        $result += (& $_) 
+        $result += (& $FilePath) 
     }
  
     $NoInput = $GlobalNoInput

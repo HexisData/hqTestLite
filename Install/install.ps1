@@ -36,7 +36,7 @@ else
 }
 
 $ModuleDir = Split-Path $PSScriptRoot -Parent
-$LocalConfigPath = "C:/hqTestLite/local_config.ps1"
+$RegistryPath = "HKCU:\Software\HexisData\hqTestLite"
 
 # BEGIN
 Write-Host "`nThank you for installing hqTestLite!"
@@ -106,24 +106,26 @@ Else {
     Write-Host "Done!"
 }
 
-# Check local config file.
-Write-Host "`nChecking local config file..."
+# Configure registry.
+Write-Host "`nConfiguring Windows Registry... "
 
-If (Test-Path $LocalConfigPath -PathType Leaf) {
-    Write-Host "$LocalConfigPath already exists!"
-}
-Else {
-    Write-Host "Creating $LocalConfigPath..."
-    Invoke-Expression "$ModuleDir\shared_config.ps1"
+Invoke-Expression "$ModuleDir\config.ps1"
+
+If (!(Test-Path $RegistryPath)) { New-Item -Path $RegistryPath -Force | Out-Null }
+
+Write-Host "`n$RegistryPath\ModuleDir = $ModuleDir"
+New-ItemProperty -Path $RegistryPath -Name "ModuleDir" -Value $ModuleDir -PropertyType String -Force | Out-Null
+[Environment]::SetEnvironmentVariable("hqTestLite", $ModuleDir, "Machine")
  
-    Copy-Item -Path "$PSScriptRoot/../Local/hqTestLite" -Destination (Split-Path $LocalConfigPath -Parent) -Recurse
-    (Get-Content $LocalConfigPath).replace("{{ModuleDir}}", $ModuleDir) | Set-Content $LocalConfigPath
+$NoInput = ($(Read-UserEntry -Label "Suppress user input for unattended testing" -Default "N" -Pattern "Y|N") -eq "Y")
+Write-Host "`n$RegistryPath\NoInput = $NoInput"
+New-ItemProperty -Path $RegistryPath -Name "NoInput" -Value $NoInput -PropertyType Binary -Force | Out-Null
 
-    $NoInputStr = "`$" + ($(Read-UserEntry -Label "Suppress all user input for unattended testing?" -Default "N" -Pattern "Y|N") -eq "Y").ToString()
-    (Get-Content $LocalConfigPath).replace("{{NoInput}}", $NoInputStr) | Set-Content $LocalConfigPath
+$ActiveEnvironment = Read-UserEntry -Label "Default active environment" -Default $ActiveEnvironment -Pattern "\w+"
+Write-Host "`n$RegistryPath\ActiveEnvironment = $ActiveEnvironment"
+New-ItemProperty -Path $RegistryPath -Name "ActiveEnvironment" -Value $ActiveEnvironment -PropertyType String -Force | Out-Null
 
-    Write-Host "Done!"
-}
+Write-Host "Done!"
 
 # END
 Write-Host "`nLocal hqTestLite installation complete!"

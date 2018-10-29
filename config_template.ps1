@@ -17,20 +17,17 @@ Get-Item -Path $RegistryPath | Select-Object -ExpandProperty Property | ForEach-
 # Set global variables not populated in Windows Registry.
 
 # MEDM installation path.
-If (!$DefaultMedmProcessAgentPath) { $Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe" }
+If (!$MedmProcessAgentPath) { $Global:MedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe" }
 
 # WinMerge command line config.
-If (!$DefaultTextDiffExe) { $Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe" }
-If (!$DefaultTextDiffParams) { $Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{{CurrentResult}}", "{{CertifiedResult}}") }
-
-# Don't suppress the text diff engine by default.
-If (!$DefaultSuppressTextDiffPopup) { $Global:DefaultSuppressTextDiffPopup = $false }
+If (!$TextDiffExe) { $Global:TextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe" }
+If (!$TextDiffParams) { $Global:TextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{{CurrentResult}}", "{{CertifiedResult}}") }
 
 # Default script type for results reporting.
-If (!$DefaultSqlScriptType) { $Global:DefaultSqlScriptType = "Sql Script" }
+If (!$SqlScriptType) { $Global:SqlScriptType = "Sql Script" }
 
 # Default directory for report files..
-If (!$DefaultReportFolder) { $Global:DefaultReportFolder = "C:\hqTestLite\Results" }
+If (!$ReportFolder) { $Global:ReportFolder = "C:\hqTestLite\Results" }
 
 # Execute tests with user input by default.
 If (!$NoInput) { $Global:NoInput = $false }

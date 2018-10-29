@@ -20,20 +20,17 @@ Get-Item -Path $RegistryPath | Select-Object -ExpandProperty Property | foreach 
 # Set global variables not populated in Windows Registry.
 
 # MEDM installation path.
-If (!(Test-Path "variable:global:DefaultMedmProcessAgentPath")) { $Global:DefaultMedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe" }
+If (!(Test-Path "variable:global:MedmProcessAgentPath")) { $Global:MedmProcessAgentPath = "C:\Program Files\Markit Group\Markit EDM_17_1_132_0\CadisProcessAgent.exe" }
 
 # WinMerge command line config.
-If (!(Test-Path "variable:global:DefaultTextDiffExe")) { $Global:DefaultTextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe" }
-If (!(Test-Path "variable:global:DefaultTextDiffParams")) { $Global:DefaultTextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{{CurrentResult}}", "{{CertifiedResult}}") }
-
-# Don't suppress the text diff engine by default.
-If (!(Test-Path "variable:global:DefaultSuppressTextDiffPopup")) { $Global:DefaultSuppressTextDiffPopup = $false }
+If (!(Test-Path "variable:global:TextDiffExe")) { $Global:TextDiffExe = "C:\Program Files (x86)\WinMerge\WinMergeU.exe" }
+If (!(Test-Path "variable:global:TextDiffParams")) { $Global:TextDiffParams = @("/e", "/s", "/u", "/wl", "/wr", "/dl", "Current Result", "/dr", "Certified Result", "{{CurrentResult}}", "{{CertifiedResult}}") }
 
 # Default script type for results reporting.
-If (!(Test-Path "variable:global:DefaultSqlScriptType")) { $Global:DefaultSqlScriptType = "Sql Script" }
+If (!(Test-Path "variable:global:SqlScriptType")) { $Global:SqlScriptType = "Sql Script" }
 
 # Default directory for report files..
-If (!(Test-Path "variable:global:DefaultReportFolder")) { $Global:DefaultReportFolder = "C:\hqTestLite\Results" }
+If (!(Test-Path "variable:global:ReportFolder")) { $Global:ReportFolder = "C:\hqTestLite\Results" }
 
 # Execute tests with user input by default.
 If (!(Test-Path "variable:global:NoInput")) { $Global:NoInput = $false }

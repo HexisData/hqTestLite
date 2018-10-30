@@ -1,3 +1,7 @@
+---
+typora-root-url: Docs
+---
+
 # Welcome to hqTestLite!
 
 **hqTestLite** is an open-source, PowerShell-based testing framework. It is designed to automate the testing of complex systems (like [Enterprise Data Management](https://en.wikipedia.org/wiki/Enterprise_data_management) systems) that normally resist efficient test automation.
@@ -17,6 +21,7 @@ Other features:
 
 # Table of Contents
 
+- [hqTestLite in a Nutshell](#hqTestLite-in-a-Nutshell)
 - [Getting Started](#getting-started)
   * [Local Execution Policy](#local-execution-policy)
   * [SQL Server Module](#sql-server-module)
@@ -44,15 +49,21 @@ Other features:
   * [dbo.tvf_Core_Split_Delimiter](#dbotvf-core-split-delimiter)
   * [dbo.usp_Core_DumpData](#dbousp-core-dumpdata)
 
+# hqTestLite in a Nutshell
+
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/xETZWWYZsK0/0.jpg)](http://www.youtube.com/watch?v=xETZWWYZsK0 "Video Title")
+
+_Click to watch the video!_
+
 # Getting Started
 
 First thing is to get hqTestLite installed. If it is already in use in your organization, some of this may already be done. Do that parts that are not.
 
 1. Clone this repository into a shared directory that is accessible to your whole development team.
-1. Copy script *shared_config_template.ps1* to *shared_config.ps1* and configure it with relevant environment settings.
+1. Copy script *config_template.ps1* to *config.ps1* and configure it with relevant environment settings.
 1. Run the scripts in the [*DB*](https://github.com/HexisData/hqTestLite/tree/master/DB) directory in the order indicated, in every DB environment where you will be performing tests. If the object names don't work with your DB object naming convention, you can change them as long as you propagate the changes through the code. Note that the *Dump_Data* stored procedure will be called by most of your test result scripts, so be sure to propagate any changes there as well!
 1. Copy the [*Test*](https://github.com/HexisData/hqTestLite/tree/master/Test) directory into an appropriate location in your version control system. Best guidance is that your tests should live right alongside your code, because they ARE code!
-1. From the [*Install*](https://github.com/HexisData/hqTestLite/tree/master/Install) directory, run the +INSTALL shortcut.
+1. From the [*Install*](https://github.com/HexisData/hqTestLite/tree/master/Install) directory, run the +INSTALL shortcut, accepting all defaults.
 
 Now you are ready to run a test!
 
@@ -67,7 +78,11 @@ If you run into any issues the first time through, see the sections below.
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Local Execution Policy
+## Potential Installation Issues
+
+The **+INSTALL** script configures the local system and writes local configurations to the Windows Registry. So long as the user has local admin privileges, this script should self-elevate and just work. In case it does not, check the items below and then run the installation script again.
+
+### Local Execution Policy
 
 All **hqTestLite** tests are articulated as PowerShell scripts. The first time you run a PowerShell script on your machine, you may get an error indicating that the execution of scripts is disabled on your system. If this occurs, open a PowerShell command prompt *as administrator* and run the following command:
 
@@ -81,7 +96,7 @@ Note also that there is also an issue around the network location from which a s
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## SQL Server Module
+### SQL Server Module
 
 The first time you execute a test, **hqTestLite** may attempt to download and install the *SqlServer* PowerShell module. If this occurs, you will see prompts requesting permission to run NuGet. Grant the requested permissions. 
 
@@ -93,13 +108,11 @@ Install-Module -Name SqlServer
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Markit EDM
+### Markit EDM
 
-By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, please add the following line to your *local_config.ps1* configuration script:
+By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, indicate the Process Agent Path when you run the **+INSTALL** script:
 
-```powershell
-$Global:DefaultMedmProcessAgentPath = "<path to MEDM exe>\CadisProcessAgent.exe"
-```
+![MedmProcessAgentPath](/../Doc/MedmProcessAgentPath.PNG)
 
 [Back to Top](#welcome-to-hqtestlite)
 

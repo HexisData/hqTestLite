@@ -1,5 +1,5 @@
 ﻿# Load & configure hqTestLite.
-Invoke-Expression "C:\hqTestLite\local_config.ps1"
+Invoke-Expression "$(Get-ItemPropertyValue -Path "HKCU:\Software\HexisData\hqTestLite" -Name "ModuleDir")\config.ps1"
 
 $DbServer = Read-UserEntry -Label "Database Server" -Default $EnvMedmDbServer
 $DbName = Read-UserEntry -Label "Database Name" -Default $EnvMedmDbName

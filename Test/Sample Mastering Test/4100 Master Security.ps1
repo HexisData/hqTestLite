@@ -1,10 +1,5 @@
-# Locate hqTestLite.
-$ModuleDir = "\\netshare\hqTestLite"
-
 # Load & configure hqTestLite.
-Import-Module "$ModuleDir\hqTestLite.psm1" -Force
-Invoke-Expression $Global:DefaultLocalConfigPath
-Invoke-Expression "$ModuleDir\env_config.ps1"
+Invoke-Expression "$(Get-ItemPropertyValue -Path "HKCU:\Software\HexisData\hqTestLite" -Name "ModuleDir")\config.ps1"
 
 # Execute test.
 $result = Test-MedmComponent `

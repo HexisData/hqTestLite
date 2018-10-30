@@ -20,9 +20,8 @@ function Confirm-File {
 	Param(
 		[string][Parameter(Mandatory = $True)] $FilePath,
 		[string][Parameter(Mandatory = $True)] $CertifiedFilePath,
-		[bool]$SuppressTextDiffPopup = $DefaultSuppressTextDiffPopup,
-		[string]$TextDiffExe = $DefaultTextDiffExe,
-		[string[]]$TextDiffParams = $DefaultTextDiffParams,
+		[string]$TextDiffExe = $Global:TextDiffExe,
+		[string[]]$TextDiffParams = $Global:TextDiffParams,
 		[string]$TestName
 	)
 
@@ -54,7 +53,7 @@ function Confirm-File {
 			$result.Reason = ($diff | %{"$($_.SideIndicator)  $($_.InputObject)"}) -join "`r`n"
 
             # Visualize diff if not suppressed.
-	        if (-not($SuppressTextDiffPopup) -and -not($NoInput)) {
+	        if (!$NoInput) {
                 $params = @()
                 foreach ($param in $TextDiffParams) {
                     $param = $param -replace "{{CurrentResult}}", $FilePath
@@ -73,39 +72,11 @@ function Confirm-File {
 	return New-Object PSObject -Property $result
 }
 
-# Returns a list of files under a path that optionally match Regex patterns for inclusion or exclusion.
-function Get-Files {
-    Param(
-        [string]$Path = $pwd, 
-        [string[]]$Include, 
-        [string[]]$Exclude
-    ) 
-
-    $files = @()
-
-    foreach ($item in Get-ChildItem $Path)
-    {
-        if (Test-Path $item.FullName -PathType Container) 
-        {
-            Get-Files $item.FullName $include $exclude
-            continue
-        } 
-
-        $leaf = Split-Path $item -Leaf
-        if ($Include | Where { $leaf -inotmatch $_ }) { continue }
-        if ($Exclude | Where { $leaf -imatch $_ }) { continue }
-        
-        $files += $item.FullName 
-    } 
-
-    return $files
-}
-
 function Export-CsvTestData {
 	Param(
-        [string]$DbServer = $EnvMedmDbServer,
+        [string]$DbServer = $Global:EnvMedmDbServer,
         
-        [string]$DbName = $EnvMedmDbName,
+        [string]$DbName = $Global:EnvMedmDbName,
         
         [string]$TableSchema = "dbo",
         
@@ -181,13 +152,41 @@ function Export-CsvTestData {
     $Rows | Export-Csv -Path $CsvPath -Encoding Unicode -NoTypeInformation
 }
 
+# Returns a list of files under a path that optionally match Regex patterns for inclusion or exclusion.
+function Get-Files {
+    Param(
+        [string]$Path = $pwd, 
+        [string[]]$Include, 
+        [string[]]$Exclude
+    ) 
+
+    $files = @()
+
+    foreach ($item in Get-ChildItem $Path)
+    {
+        if (Test-Path $item.FullName -PathType Container) 
+        {
+            Get-Files $item.FullName $include $exclude
+            continue
+        } 
+
+        $leaf = Split-Path $item -Leaf
+        if ($Include | Where { $leaf -inotmatch $_ }) { continue }
+        if ($Exclude | Where { $leaf -imatch $_ }) { continue }
+        
+        $files += $item.FullName 
+    } 
+
+    return $files
+}
+
 function Import-CsvTable {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
-        [string]$DbServer = $EnvMedmDbServer,
+        [string]$DbServer = $Global:EnvMedmDbServer,
 
-        [string]$DbName = $EnvMedmDbName,
+        [string]$DbName = $Global:EnvMedmDbName,
 
         [Parameter(Mandatory = $True)]
         [string]$CsvPath
@@ -212,11 +211,11 @@ function Import-CsvTable {
 function Invoke-MedmComponent {
         [CmdletBinding(SupportsShouldProcess = $True)]
 	    Param(
-        [string]$ProcessAgentPath = $DefaultMedmProcessAgentPath,
+        [string]$MedmProcessAgentPath = $Global:MedmProcessAgentPath,
 
-        [string]$DbServer = $EnvMedmDbServer,
+        [string]$DbServer = $Global:EnvMedmDbServer,
 
-        [string]$DbName = $EnvMedmDbName,
+        [string]$DbName = $Global:EnvMedmDbName,
 
         [string]$SetupSqlDir = $null,
 
@@ -252,8 +251,8 @@ function Invoke-MedmComponent {
 
 	# Execute MEDM solution.
     "`nBeginning execution of MEDM $($ComponentType) `"$($ComponentName)`" on DB $($DbServer)\$($DbName)" | Write-Host  
-    "`nEXECUTING $($ProcessAgentPath) $($params)`n" | Write-Host
-    if ($PSCmdlet.ShouldProcess("MEDM $($ComponentType) $($ComponentName)")) {& $ProcessAgentPath $params  | Write-Host }
+    "`nEXECUTING $($MedmProcessAgentPath) $($params)`n" | Write-Host
+    if ($PSCmdlet.ShouldProcess("MEDM $($ComponentType) $($ComponentName)")) {& $MedmProcessAgentPath $params  | Write-Host }
     "Completed execution of MEDM $($ComponentType) `"$($ComponentName)`" on DB $($DbServer)\$($DbName)`n" | Write-Host  
 
     # Invoke cleanup scripts.
@@ -272,9 +271,9 @@ function Invoke-SqlScripts {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
-        [string]$DbServer = $EnvMedmDbServer,
+        [string]$DbServer = $Global:EnvMedmDbServer,
 
-        [string]$DbName = $EnvMedmDbServer,
+        [string]$DbName = $Global:EnvMedmDbServer,
 
         [string]$SqlDir = $null,
 
@@ -285,7 +284,7 @@ function Invoke-SqlScripts {
 
 		[switch]$OutputTable,
  
-        [string]$ScriptType = $DefaultSqlScriptType
+        [string]$ScriptType = $Global:SqlScriptType
    )
     # Default $SqlDir to current location.
     if (-Not $SqlDir) {$SqlDir = Get-Location}
@@ -328,7 +327,7 @@ function Invoke-SqlScripts {
 
 function Publish-Results {
 	Param(
-		[string]$ReportFolder = $DefaultReportFolder,
+		[string]$ReportFolder = $Global:ReportFolder,
 		[Parameter(Mandatory = $True)]
 		[string]$TestSuiteName,
 		[Parameter(Mandatory = $True)]
@@ -452,15 +451,26 @@ function Show-Execution {
     [void](Read-Host "Press Enter to continue") 
 }
 
+function Test-Installed( $program ) {
+    
+    $x86 = ((Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall") |
+        Where-Object { $_.GetValue( "DisplayName" ) -like "*$program*" } ).Length -gt 0;
+
+    $x64 = ((Get-ChildItem "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall") |
+        Where-Object { $_.GetValue( "DisplayName" ) -like "*$program*" } ).Length -gt 0;
+
+    return $x86 -or $x64;
+}
+
 function Test-MedmComponent {
     [CmdletBinding(SupportsShouldProcess = $True)]
 
     Param(
-        [string]$ProcessAgentPath = $DefaultMedmProcessAgentPath,
+        [string]$MedmProcessAgentPath = $Global:MedmProcessAgentPath,
 
-		[string]$DbServer = $EnvMedmDbServer,
+		[string]$DbServer = $Global:EnvMedmDbServer,
 
-		[string]$DbName = $EnvMedmDbName,
+		[string]$DbName = $Global:EnvMedmDbName,
 
 		[string]$SetupSqlDir = $null,
 
@@ -488,13 +498,11 @@ function Test-MedmComponent {
 
 		[string]$CertifiedResultPath = $null,
 
-		[string]$TextDiffExe = $DefaultTextDiffExe,
+		[string]$TextDiffExe = $Global:TextDiffExe,
 
-		[string[]]$TextDiffParams = $DefaultTextDiffParams,
+		[string[]]$TextDiffParams = $Global:TextDiffParams,
 
 		[switch]$OutputTable,
-
-		[bool]$SuppressTextDiffPopup = $DefaultSuppressTextDiffPopup,
 
 		[string]$TestName,
 
@@ -505,7 +513,7 @@ function Test-MedmComponent {
     # Invoke setup scripts and MEDM component.
     if (-not($SkipProcess)) {
         Invoke-MedmComponent `
-            -ProcessAgentPath $ProcessAgentPath `
+            -MedmProcessAgentPath $MedmProcessAgentPath `
             -DbServer $DbServer `
             -DbName $DbName `
 		    -ComponentType $ComponentType `
@@ -544,7 +552,6 @@ function Test-MedmComponent {
 	$result = Confirm-File `
 		-FilePath $TestResultPath `
 		-CertifiedFilePath $CertifiedResultPath `
-		-SuppressTextDiffPopup $SuppressTextDiffPopup `
 		-TestName $TestName `
 		-TextDiffExe $TextDiffExe `
 		-TextDiffParams $TextDiffParams

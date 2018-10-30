@@ -1,4 +1,8 @@
-﻿# Self-elevating PS script: https://blogs.msdn.microsoft.com/virtual_pc_guy/2010/09/23/a-self-elevating-powershell-script/
+﻿param(
+    [bool]$NoInput,
+    [string]$ActiveEnvironment,
+    [string]$MedmProcessAgentPath
+)
 
 # Get the ID and security principal of the current user account
 $myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -15,20 +19,18 @@ if ($myWindowsPrincipal.IsInRole($adminRole))
     $Host.UI.RawUI.BackgroundColor = "DarkBlue"
     clear-host
 }
+
 else
 {
     # We are not running "as Administrator" - so relaunch as administrator
-   
-    # Create a new process object that starts PowerShell
     $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
-   
-    # Specify the current script path and name as a parameter
+
     $newProcess.Arguments = $myInvocation.MyCommand.Definition;
-   
-    # Indicate that the process should be elevated
+    $newProcess.Arguments += " -NoInput `$$NoInput"
+    if ($ActiveEnvironment) { $newProcess.Arguments += " -ActiveEnvironment $ActiveEnvironment" } 
+    if ($MedmProcessAgentPath) { $newProcess.Arguments += " -MedmProcessAgentPath $MedmProcessAgentPath" } 
+
     $newProcess.Verb = "runas";
-   
-    # Start the new process
     [System.Diagnostics.Process]::Start($newProcess);
    
     # Exit from the current, unelevated, process
@@ -36,7 +38,7 @@ else
 }
 
 $ModuleDir = Split-Path $PSScriptRoot -Parent
-$LocalConfigPath = "C:/hqTestLite/local_config.ps1"
+$RegistryPath = "HKCU:\Software\HexisData\hqTestLite"
 
 # BEGIN
 Write-Host "`nThank you for installing hqTestLite!"
@@ -65,7 +67,7 @@ If (("Unrestricted", "Bypass").Contains($CurrentExecutionPolicy)) {
 }
 Else {
     Write-Host "Setting Execution Policy to Unrestricted... " -NoNewline
-    Set-ExecutionPolicy Unrestricted
+    Set-ExecutionPolicy Unrestricted -Force
     Write-Host "Done!"
 }
 
@@ -77,55 +79,55 @@ If (Get-Module -ListAvailable -Name "SqlServer") {
 }
 Else {
     Write-Host "Installing SqlServer module... " -NoNewline 
-    Install-Module -Name SqlServer
+    Install-Module -Name SqlServer -Force
     Write-Host "Done!"
 }
+
+# Configure registry.
+Write-Host "`nConfiguring Windows Registry... "
+
+If (!(Test-Path $RegistryPath)) { New-Item -Path $RegistryPath -Force | Out-Null }
+
+$Global:NoInput = $NoInput
+if ($ActiveEnvironment) { $Global:ActiveEnvironment = $ActiveEnvironment }
+if ($MedmProcessAgentPath) { $Global:MedmProcessAgentPath = $MedmProcessAgentPath }
+
+Invoke-Expression "$ModuleDir\config.ps1"
+
+Write-Host "`n$RegistryPath\ModuleDir = $ModuleDir"
+New-ItemProperty -Path $RegistryPath -Name "ModuleDir" -Value $ModuleDir -PropertyType String -Force | Out-Null
+[Environment]::SetEnvironmentVariable("hqTestLite", $ModuleDir, "Machine")
+
+If (!$NoInput) { $Global:NoInput = ($(Read-UserEntry -Label "Suppress user input for unattended testing" -Default $(If ($Global:NoInput) { "Y" } Else { "N" }) -Pattern "Y|N") -eq "Y") }
+Write-Host "`n$RegistryPath\NoInput = $Global:NoInput"
+New-ItemProperty -Path $RegistryPath -Name "NoInput" -Value $Global:NoInput -PropertyType Binary -Force | Out-Null
+
+If (!$ActiveEnvironment) { $Global:ActiveEnvironment = Read-UserEntry -Label "Default active environment" -Default $Global:ActiveEnvironment -Pattern "\w+" }
+Write-Host "`n$RegistryPath\ActiveEnvironment = $Global:ActiveEnvironment"
+New-ItemProperty -Path $RegistryPath -Name "ActiveEnvironment" -Value $Global:ActiveEnvironment -PropertyType String -Force | Out-Null
+
+If (!$MedmProcessAgentPath) { $Global:MedmProcessAgentPath = Read-UserEntry -Label "MEDM Process Agent path" -Default $Global:MedmProcessAgentPath -Pattern ".+" }
+Write-Host "`n$RegistryPath\MedmProcessAgentPath = $Global:MedmProcessAgentPath"
+New-ItemProperty -Path $RegistryPath -Name "MedmProcessAgentPath" -Value $Global:MedmProcessAgentPath -PropertyType String -Force | Out-Null
+
+Write-Host "Done!"
 
 # Check WinMerge installation.
-Write-Host "`nChecking WinMerge installation..."
+If (!$Global:NoInput) {
+    Write-Host "`nChecking WinMerge installation..."
 
-function Is-Installed( $program ) {
-    
-    $x86 = ((Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall") |
-        Where-Object { $_.GetValue( "DisplayName" ) -like "*$program*" } ).Length -gt 0;
-
-    $x64 = ((Get-ChildItem "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall") |
-        Where-Object { $_.GetValue( "DisplayName" ) -like "*$program*" } ).Length -gt 0;
-
-    return $x86 -or $x64;
-}
-
-If (Is-Installed "WinMerge") {
-    Write-Host "WinMerge is already installed!"
-}
-Else {
-    Write-Host "Installing WinMerge... " -NoNewline 
-    $WinMergeExePath = "$PSScriptRoot\WinMerge-2.14.0-Setup.exe"
-    $WinMergeExeParams = "/SILENT" # http://www.jrsoftware.org/ishelp/index.php?topic=setupcmdline
-    & $WinMergeExePath $WinMergeExeParams | Write-Host
-    Write-Host "Done!"
-}
-
-# Check local config file.
-Write-Host "`nChecking local config file..."
-
-If (Test-Path $LocalConfigPath -PathType Leaf) {
-    Write-Host "$LocalConfigPath already exists!"
-}
-Else {
-    Write-Host "Creating $LocalConfigPath..."
-    Invoke-Expression "$ModuleDir\shared_config.ps1"
- 
-    Copy-Item -Path "$PSScriptRoot/../Local/hqTestLite" -Destination (Split-Path $LocalConfigPath -Parent) -Recurse
-    (Get-Content $LocalConfigPath).replace("{{ModuleDir}}", $ModuleDir) | Set-Content $LocalConfigPath
-
-    $NoInputStr = "`$" + ($(Read-UserEntry -Label "Suppress all user input for unattended testing?" -Default "N" -Pattern "Y|N") -eq "Y").ToString()
-    (Get-Content $LocalConfigPath).replace("{{NoInput}}", $NoInputStr) | Set-Content $LocalConfigPath
-
-    Write-Host "Done!"
+    If (Test-Installed "WinMerge") {
+        Write-Host "WinMerge is already installed!"
+    }
+    Else {
+        Write-Host "Installing WinMerge... " -NoNewline 
+        $WinMergeExePath = "$PSScriptRoot\WinMerge-2.14.0-Setup.exe"
+        $WinMergeExeParams = "/SILENT" # http://www.jrsoftware.org/ishelp/index.php?topic=setupcmdline
+        & $WinMergeExePath $WinMergeExeParams | Write-Host
+        Write-Host "Done!"
+    }
 }
 
 # END
 Write-Host "`nLocal hqTestLite installation complete!"
-[void](Read-Host "`nPress Enter to exit")
-
+If (!$Global:NoInput) { [void](Read-Host "`nPress Enter to exit") }

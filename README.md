@@ -108,7 +108,7 @@ Install-Module -Name SqlServer
 
 By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, indicate the Process Agent Path when you run the **+INSTALL** script:
 
-![MedmProcessAgentPath](./Doc/MedmProcessAgentPath.PNG)
+![MedmProcessAgentPath](Doc/MedmProcessAgentPath.PNG)
 
 [Back to Top](#welcome-to-hqtestlite)
 

@@ -1,7 +1,3 @@
----
-typora-root-url: Docs
----
-
 # Welcome to hqTestLite!
 
 **hqTestLite** is an open-source, PowerShell-based testing framework. It is designed to automate the testing of complex systems (like [Enterprise Data Management](https://en.wikipedia.org/wiki/Enterprise_data_management) systems) that normally resist efficient test automation.
@@ -112,7 +108,7 @@ Install-Module -Name SqlServer
 
 By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be installed in the default installation directory on your local machine. If you are running a different version of MEDM, or from a different directory, indicate the Process Agent Path when you run the **+INSTALL** script:
 
-![MedmProcessAgentPath](/../Doc/MedmProcessAgentPath.PNG)
+![MedmProcessAgentPath](./Doc/MedmProcessAgentPath.PNG)
 
 [Back to Top](#welcome-to-hqtestlite)
 

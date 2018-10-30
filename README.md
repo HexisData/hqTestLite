@@ -17,13 +17,14 @@ Other features:
 
 # Table of Contents
 
-- [hqTestLite in a Nutshell](#hqTestLite-in-a-Nutshell)
+- [hqTestLite in a Nutshell](#hqtestlite-in-a-nutshell)
 - [Getting Started](#getting-started)
-  * [Local Execution Policy](#local-execution-policy)
-  * [SQL Server Module](#sql-server-module)
-  * [Markit EDM](#markit-edm)
-  * [WinMerge](#winmerge)
-  * [Changing Environments](#changing-environments)
+  * [Potential Installation Issues](#potential-installation-issues)
+    + [Local Execution Policy](#local-execution-policy)
+    + [SQL Server Module](#sql-server-module)
+    + [Markit EDM](#markit-edm)
+    + [WinMerge](#winmerge)
+    + [Changing Environments](#changing-environments)
 - [Key Files and Directories](#key-files-and-directories)
 - [Global Variables](#global-variables)
 - [Cmdlets](#cmdlets)
@@ -112,7 +113,7 @@ By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be inst
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## WinMerge
+### WinMerge
 
 **hqTestLite** uses [WinMerge](http://winmerge.org) as its text comparison engine. If WinMerge is not installed, the **+INSTALL** script will install it unless the **-NoInput** optuion is enabled.
 
@@ -120,7 +121,7 @@ By default, **hqTestLite** is expecting Markit EDM (MEDM) v17.1.132.0 to be inst
 
 [Back to Top](#welcome-to-hqtestlite)
 
-## Changing Environments
+### Changing Environments
 
 Environment-specific tokens and values are managed centrally in script *config.ps1*. The active testing environment is stored in the Windows Registry.
 

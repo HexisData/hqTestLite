@@ -1,3 +1,17 @@
+<#
+
+The purpose of this branch is to add a -UnpackSproc switch to the relevant cmdlets that forces the "unpacking" of the DumpData
+SP so that it can run in environments where executing SPs is not allowed.
+
+The idea is to pull the SQL file into a string variable, run regex to find the SP and arguments, and then pass the raw SQL to be run.
+
+Current iteration of regex is /EXEC(?:UTE)? (?:[\[]?\w+[\]]?\.)?[\[]?\w+_core_dumpdata[\]]?(?:\s+(@.+))?(?:\s*(@.+))*/gmi
+
+Problem still to be solved is that we need a query to INFORMATION_SCHEMA to construct the SQL. Put this down because the client
+found a way to operate with permission, and not entirely obvious how to proceed if we have to.
+
+#>
+
 Add-Type -TypeDefinition @"
    public enum PatternAction
    {
@@ -273,7 +287,7 @@ function Invoke-SqlScripts {
     Param(
         [string]$DbServer = $Global:EnvMedmDbServer,
 
-        [string]$DbName = $Global:EnvMedmDbServer,
+        [string]$DbName = $Global:EnvMedmDbName,
 
         [string]$SqlDir = $null,
 
@@ -283,6 +297,8 @@ function Invoke-SqlScripts {
         [string]$OutputPath = $null,
 
 		[switch]$OutputTable,
+
+        [switch]$UnpackSproc,
  
         [string]$ScriptType = $Global:SqlScriptType
    )
@@ -307,11 +323,14 @@ function Invoke-SqlScripts {
 
                     if ($OutputPath) { 
                         "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
+
+                        $SqlScript = [IO.File]::ReadAllText($SqlPath)
+
 					    if ($OutputTable) {
-						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $SqlScript | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
 					    }
 					    else {
-						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $SqlScript | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
 					    }
                     }
                     else { 
@@ -506,7 +525,9 @@ function Test-MedmComponent {
 
 		[string]$TestName,
 
-		[switch]$SkipProcess
+		[switch]$SkipProcess,
+
+        [switch]$UnpackSproc
     )
 	$stopWatch = [Diagnostics.Stopwatch]::StartNew()
 
@@ -532,7 +553,8 @@ function Test-MedmComponent {
 			-SqlFiles $ResultSqlFiles `
 			-ScriptType "Result Query" `
 			-OutputPath $TestResultPath `
-			-OutputTable:$OutputTable
+			-OutputTable:$OutputTable `
+            -UnpackSproc:$UnpackSproc
 	}
 
     # Invoke cleanup scripts.

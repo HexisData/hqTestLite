@@ -323,12 +323,12 @@ Invoke-MedmComponent `
 | -DbServer | Optional. The target SQL Server database server address. s to the value of `$Global:MedmDbServer`. <br /><br />Ex: `-DbServer "DbServer"` |
 | -DbName | Optional. The target SQL Server database name. Defaults to the value of `$Global:MedmDbName`.<br /><br />Ex: `-DbName "DbName"` |
 | -SetupSqlDir | Optional. A directory containing SQL scripts to be executed prior to component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-SetupSqlDir ".\SetupSql"` |
-| -SetupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed prior to component invocation. All must be located within the directory indicated by `-SetupSqlDir`. <br /><br />Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"` |
+| -SetupSqlFiles | Optional. A comma-delimited list of RegEx patterns indicating SQL script files to be executed and/or CSV data files to be imported. All files must be nested within the directory indicated by `-SetUpSqlDir`. Defaults to `".+\.(?:sql|csv)"`.<br /><br />Ex: `-SetupSqlFiles "T_PREMASTER_SEC\.sql,.*\.csv"` |
 | -ComponentName | Required. The name of the MEDM component to be executed. <br /><br />Ex: `-ComponentName "My Solution"` |
 | -ComponentType | Required. The type of the MEDM component to be executed. One of the following values: DataPorter, DataInspector, DataMatcherProcess, DataConstructor, Solution.<br /><br />Ex: `-ComponentType: "Solution"` |
 | -ConfigurableParams | Optional. A delimited list of MEDM configurable parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". <br /><br />Ex: `-SolutionParams "param1=value1:param2=value2"` |
 | -CleanupSqlDir | Optional. A directory containing SQL scripts to be executed following component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-CleanupSqlDir ".\CleanupSql"` |
-| -CleanupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed following component invocation. All must be located within the directory indicated by `-CleanupSqlDir`. <br /><br />Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"` |
+| -CleanupSqlFiles | Optional. A comma-delimited list of RegEx patterns indicating SQL script files to be executed following component invocation. All must be nested within the directory indicated by `-CleanupSqlDir`. Defaults to `".+\.(?:sql|csv)"` <br /><br />Ex: `-CleanupSqlFiles "MyCleanupSqlFile1\.sql,MyCleanupSqlFile2\.sql"` |
 
 [Back to Top](#welcome-to-hqtestlite)
 
@@ -345,7 +345,7 @@ Invoke-SqlScripts `
     [-DbServer <string>] `
     [-DbName <string>] `
     [-SqlDir <string>] `
-    -SqlFiles <string> `
+    [-SqlFiles <string>] `
     [-OutputPath <string>] `
     [-OutputTable] `
     [-ScriptType <string>]
@@ -358,7 +358,7 @@ Invoke-SqlScripts `
 | -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:MedmDbServer`.<br /><br />Ex: `-DbServer "DbServer"` |
 | -DbName   | Optional. The target SQL Server database name. Defaults to the value of `$Global:MedmDbName`.<br /><br />Ex: `-DbName "MyDb"` |
 | -SqlDir   | Optional. The directory containing the SQL scripts to be executed. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory.<br /><br />Ex: `-SqlDir "./ResultSql"` |
-| -SqlFiles | Required. A comma-delimited list of SQL script files to be executed. All files must be located within the directory indicated by `-SqlDir`.<br /><br />Ex: `-SqlFiles "T_PREMASTER_SEC.sql,T_MASTER_SEC.csv"` |
+| -SqlFiles | Optional. A comma-delimited list of RegEx patterns indicating SQL script files to be executed and/or CSV data files to be imported. All files must be nested within the directory indicated by `-SqlDir`. Defaults to `".+\.(?:sql|csv)"`.<br /><br />Ex: `-SqlFiles "T_PREMASTER_SEC\.sql,.*\.csv"` |
 | -OutputPath | Optional. If set, indicates the single text file to which all script outputs will be written. Relative paths will be resolved relative to the current directory. File will be overwritten if it exists. <br /><br />Ex: `-OutputPath "Result.txt"` |
 | -OutputTable | Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. <br /><br />Ex: `-OutputTable` |
 | -ScriptType | Optional. Differentiates different script types in conjunction with the `-Verbose` and `-WhatIf` switches. Defaults to the value of `$Global:SqlScriptType`. <br /><br />Ex: `-ScriptType "Sql Script"` |
@@ -482,15 +482,15 @@ Test-MedmComponent `
 | -DbServer | Optional. The target SQL Server database server address. Defaults to the value of `$Global:MedmDbServer`. <br /><br />Ex: `-DbServer "DbServer"` |
 | -DbName | Optional. The target SQL Server database name. Defaults to the value of `$Global:MedmDbName`.<br /><br />Ex: `-DbName "DbName"` |
 | -SetupSqlDir | Optional. A directory containing SQL scripts to be executed prior to component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-SetupSqlDir ".\SetupSql"` |
-| -SetupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed prior to Solution invocation. All must be located within the directory indicated by `-SetupSqlDir`.<br /><br />Ex: `-SetupSqlFiles "MySetupSqlFile1.sql,MySetupSqlFile2.sql"` |
+| -SetupSqlFiles | Optional. A comma-delimited list of RegEx patterns indicating SQL script files to be executed and/or CSV data files to be imported. All files must be nested within the directory indicated by `-SetUpSqlDir`. Defaults to `".+\.(?:sql|csv)"` <br /><br />Ex: `-SetupSqlFiles "T_PREMASTER_SEC\.sql,.*\.csv"` |
 | -ComponentName | Required. The name of the MEDM component to be executed. <br /><br />Ex: `-ComponentName "My Solution"` |
 | -ComponentType | Required. The type of the MEDM component to be executed. One of the following values: DataPorter, DataInspector, DataMatcherProcess, DataConstructor, Solution.<br /><br />Ex: `-ComponentType: "Solution"` |
 | -ConfigurableParams | Optional. A delimited list of MEDM configurable parameter name=value pairs. Pairs are delimited with a ":". Only include parameters that must be explicitly set; those retaining default values may be omitted. Parameter names and values must not contain characters "=" or ":". |
 | -ResultSqlDir | Optional. A directory containing SQL scripts to extract test results after component execution. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-ResultSqlDir ".\ResultSql"` |
-| -ResultSqlFiles | Optional. A comma-delimited list of SQL script files to extract test results after component execution. All must be located within the directory indicated by `-ResultSqlDir`. <br /><br />Ex: `-ResultSqlFiles "MyResultSqlFile1.sql,MyResultSqlFile2.sql"` |
+| -ResultSqlFiles | Optional. A comma-delimited list of RegEx patterns indicating SQL script files to extract test results after component execution. All must be located within the directory indicated by `-ResultSqlDir`. Defaults to `".+\.(?:sql|csv)"` <br /><br />Ex: `-ResultSqlFiles ".*"` |
 | -OutputTable | Switch. If present, causes output data to be formatted as a table. Otherwise output data is formatted as a list. <br /><br />Ex: `-OutputTable` |
 | -CleanupSqlDir | Optional. A directory containing SQL scripts to be executed following component invocation. Relative paths will be resolved relative to the current directory. If omitted, defaults to the current directory. <br /><br />Ex: `-CleanupSqlDir ".\CleanupSql"` |
-| -CleanupSqlFiles | Optional. A comma-delimited list of SQL script files to be executed following component invocation. All must be located within the directory indicated by `-CleanupSqlDir`.<br /><br />Ex: `-CleanupSqlFiles "MyCleanupSqlFile1.sql,MyCleanupSqlFile2.sql"` |
+| -CleanupSqlFiles | Optional. A comma-delimited list of RegEx patterns indicating SQL script files to be executed following component invocation. All must be nested within the directory indicated by `-CleanupSqlDir`. Defaults to `".+\.(?:sql|csv)"` <br /><br />Ex: `-CleanupSqlFiles "MyCleanupSqlFile1\.sql,MyCleanupSqlFile2\.sql"` |
 | -TestResultPath | Required. Destination file for test result scripts. Relative paths will be resolved relative to the current directory, and any existing file of the same name will be overwritten.<br /><br />Ex: `-TestResultPath "Result.txt"` |
 | -CertifiedResultPath | Required. Certified test result file. Relative paths will be resolved relative to the current directory.<br /><br />Ex: `-CertifiedFilePath "Result.certified.txt"` |
 | -SuppressTextDiffPopup | Switch. If present, prevents the text comparison engine from being invoked in the event of a failed test. Useful for automated regression testing. Defaults to the value of `$Global:SuppressTextDiffPopup`.<br /><br />Ex: `-SuppressTextDiffPopup` |

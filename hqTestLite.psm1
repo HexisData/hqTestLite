@@ -15,6 +15,11 @@ if (-not (Get-Command Invoke-Sqlcmd -ErrorAction SilentlyContinue)) {
 	Pop-Location # get back to the current location, counteracting the side effect of importing SqlServer	
 }
 
+$ScriptName = $(Get-PSCallStack | Select-Object -Property * | Where-Object {$_.ScriptName -ne $null})[-1].ScriptName
+$Parent = Split-Path -Path $ScriptName -Parent
+$BaseName = (Get-Item $ScriptName).BaseName
+Start-Transcript -Path "$($Parent)\$($BaseName).log" -Append -IncludeInvocationHeader
+
 function Confirm-File {
     [CmdletBinding(SupportsShouldProcess = $True)]
 	Param(
@@ -294,28 +299,31 @@ function Invoke-SqlScripts {
         Push-Location
         if ($OutputPath) { "" | Out-File -FilePath $OutputPath }
         $SqlFiles.Split(",") | ForEach {
-            $SqlPath = Join-Path -Path $SqlDir -ChildPath $_
-            if ($PSCmdlet.ShouldProcess("$($ScriptType) $($_)")) {
-                $Extension = (Get-Item $SqlPath).Extension
-                if ($Extension.ToLower() -eq ".csv") {
-                    "  Importing CSV File `"$($SqlPath)`"" | Write-Host
+            Get-Files -Path $SqlDir -Include $_.Trim() | ForEach {
+                $SqlPath = $_
+                $SqlFile = Split-Path -Path $SqlPath -Leaf
+                if ($PSCmdlet.ShouldProcess("$($ScriptType) $($SqlPath)")) {
+                    $Extension = (Get-Item $SqlPath).Extension
+                    if ($Extension.ToLower() -eq ".csv") {
+                        "  Importing CSV File `"$($SqlFile)`"" | Write-Host
 
-                    Import-CsvTable -DbServer $DbServer -DbName $DbName -CsvPath $SqlPath
-                }
-                else {
-                    "  Executing $($ScriptType) `"$($SqlPath)`"" | Write-Host
-
-                    if ($OutputPath) { 
-                        "========== $($_) ==========" | Out-File -FilePath $OutputPath -Append 
-					    if ($OutputTable) {
-						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
-					    }
-					    else {
-						    Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
-					    }
+                        Import-CsvTable -DbServer $DbServer -DbName $DbName -CsvPath $SqlPath
                     }
-                    else { 
-                        Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 
+                    else {
+                        "  Executing $($ScriptType) `"$($SqlFile)`"" | Write-Host
+
+                        if ($OutputPath) { 
+                            "========== $($SqlFile) ==========" | Out-File -FilePath $OutputPath -Append 
+					        if ($OutputTable) {
+						        Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-Table -Property * -AutoSize | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+					        }
+					        else {
+						        Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath | Format-List -Property * | Out-String -Stream -Width 32768 | Out-File -FilePath $OutputPath -Append
+					        }
+                        }
+                        else { 
+                            Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -InputFile $SqlPath 
+                        }
                     }
                 }
             }

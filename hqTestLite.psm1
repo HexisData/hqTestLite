@@ -282,8 +282,7 @@ function Invoke-SqlScripts {
 
         [string]$SqlDir = $null,
 
-        [Parameter(Mandatory = $True)]
-        [string]$SqlFiles,
+        [string]$SqlFiles = ".+\.(?:sql|csv)",
 
         [string]$OutputPath = $null,
 

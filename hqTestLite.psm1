@@ -282,7 +282,7 @@ function Invoke-SqlScripts {
 
         [string]$SqlDir = $null,
 
-        [string]$SqlFiles = ".+\.(?:sql|csv)",
+        [string]$SqlFiles = $null,
 
         [string]$OutputPath = $null,
 
@@ -481,7 +481,7 @@ function Test-MedmComponent {
 
 		[string]$SetupSqlDir = $null,
 
-		[string]$SetupSqlFiles = $null,
+		[string]$SetupSqlFiles = ".+\.(?:sql|csv)",
 
 		[Parameter(Mandatory = $True)]
         [string]$ComponentName,
@@ -492,9 +492,9 @@ function Test-MedmComponent {
 
 		[string]$ConfigurableParams = $null,
 
-		[string]$ResultSqlDir,
+		[string]$ResultSqlDir = $null,
 
-        [string]$ResultSqlFiles,
+        [string]$ResultSqlFiles = ".+\.(?:sql|csv)",
 
 		[string]$CleanupSqlDir = $null,
 

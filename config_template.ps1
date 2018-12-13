@@ -1,4 +1,8 @@
-﻿# Pull global variables from Windows Registry.
+﻿param(
+    [switch]$Install
+)
+
+# Pull global variables from Windows Registry.
 $RegistryPath = "HKCU:\Software\HexisData\hqTestLite"
 Get-Item -Path $RegistryPath | Select-Object -ExpandProperty Property | ForEach-Object {
     $PropertyName = $_
@@ -54,7 +58,11 @@ switch ($ActiveEnvironment) {
     }
 
     default {
-        throw "Unknown environment!"
+        Write-Host "Unknown environment!"
+        If (!$Install) { 
+            [void](Read-Host "Press Enter to exit")
+            [Environment]::Exit(1)
+        }
     }
 }
 

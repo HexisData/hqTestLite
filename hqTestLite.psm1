@@ -481,7 +481,7 @@ function Test-MedmComponent {
 
 		[string]$SetupSqlDir = $null,
 
-		[string]$SetupSqlFiles = ".+\.(?:sql|csv)",
+		[string]$SetupSqlFiles = $null,
 
 		[Parameter(Mandatory = $True)]
         [string]$ComponentName,
@@ -494,7 +494,7 @@ function Test-MedmComponent {
 
 		[string]$ResultSqlDir = $null,
 
-        [string]$ResultSqlFiles = ".+\.(?:sql|csv)",
+        [string]$ResultSqlFiles = $null,
 
 		[string]$CleanupSqlDir = $null,
 

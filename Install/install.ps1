@@ -92,7 +92,7 @@ $Global:NoInput = $NoInput
 if ($ActiveEnvironment) { $Global:ActiveEnvironment = $ActiveEnvironment }
 if ($MedmProcessAgentPath) { $Global:MedmProcessAgentPath = $MedmProcessAgentPath }
 
-Invoke-Expression "$ModuleDir\config.ps1"
+Invoke-Expression "$ModuleDir\config.ps1 -Install"
 
 Write-Host "`n$RegistryPath\ModuleDir = $ModuleDir"
 New-ItemProperty -Path $RegistryPath -Name "ModuleDir" -Value $ModuleDir -PropertyType String -Force | Out-Null

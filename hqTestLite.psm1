@@ -51,7 +51,7 @@ function Confirm-File {
     # ... else produce result.
     else {
         # Complete result object.
-		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath)
+		$diff = Compare-Object (Get-Content $CertifiedFilePath) (Get-Content $FilePath) -SyncWindow 1
 		$result.Status = %{if (0 -eq $diff.Count -or $null -eq $diff.Count) {"PASSED"} else {"FAILED"}}
 
 		if ($result.Status -eq "FAILED") {
@@ -114,19 +114,19 @@ function Export-CsvTestData {
 
     $Sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}'" -f $TableSchema, $TableName
 
-    $Columns = Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql
-    $Rows = @()
+    $Columns = Invoke-Sqlcmd -ServerInstance $DbServer -Database $DbName -Query $Sql | Where { 
+        (($ColNameAction -eq [PatternAction]::Exclude) -and -not($_.COLUMN_NAME -match $ColNamePattern)) `
+        -or (($ColNameAction -eq [PatternAction]::Include) -and ($_.COLUMN_NAME -match $ColNamePattern)) `
+    }
 
+    If ($Columns.Count -eq 0) { Write-Host "No columns to process." }
+
+    $Rows = @()
     For ($i = 0; $i -lt $RowCount; $i++) {
         $Row = New-Object –TypeName PSObject
 
-        $Columns | where { -not($_.COLUMN_NAME -match $ColNamePattern) }  | foreach {
+        $Columns | ForEach {
             $Column = $_
-
-            If (-not( `
-                (($ColNameAction -eq [PatternAction]::Exclude) -and -not($Column.COLUMN_NAME -match $ColNamePattern)) `
-                -or (($ColNameAction -eq [PatternAction]::Include) -and ($Column.COLUMN_NAME -match $ColNamePattern)) `
-            )) { continue }
 
             switch -Regex ($Column.DATA_TYPE) {
                 "bit" { $Value = Get-Random -Minimum 0 -Maximum 2 }
